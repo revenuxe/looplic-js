@@ -29,6 +29,8 @@ const BookingPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [pincode, setPincode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
 
