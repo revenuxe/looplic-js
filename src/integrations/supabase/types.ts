@@ -14,16 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          guard_type: string | null
+          id: string
+          model_id: string | null
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          guard_type?: string | null
+          id?: string
+          model_id?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          guard_type?: string | null
+          id?: string
+          model_id?: string | null
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brands: {
+        Row: {
+          created_at: string
+          gradient: string
+          id: string
+          letter: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          gradient?: string
+          id?: string
+          letter?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          gradient?: string
+          id?: string
+          letter?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      model_screen_guards: {
+        Row: {
+          created_at: string
+          guard_type: string
+          id: string
+          model_id: string
+          price: number
+        }
+        Insert: {
+          created_at?: string
+          guard_type: string
+          id?: string
+          model_id: string
+          price?: number
+        }
+        Update: {
+          created_at?: string
+          guard_type?: string
+          id?: string
+          model_id?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_screen_guards_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      models: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          series_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          series_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          series_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "models_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      series: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "series_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +331,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
