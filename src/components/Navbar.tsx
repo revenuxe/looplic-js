@@ -9,7 +9,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
       <div className="container flex items-center justify-between h-14">
-        <img src={logo} alt="Looplic" className="h-7" />
+        <img src={logo} alt="Looplic" className="h-8 md:h-7" />
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
