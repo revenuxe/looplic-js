@@ -80,6 +80,10 @@ const ServicesTab = () => {
 
   useEffect(() => { fetchBrands(); }, [fetchBrands]);
 
+  // Image upload state
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+
   const resetAdd = () => {
     setShowAdd(false);
     setAddName("");
@@ -87,6 +91,25 @@ const ServicesTab = () => {
     setAddGradient(gradientOptions[0]);
     setAddGuardType(guardTypeOptions[0]);
     setAddPrice("");
+    setAddImage(null);
+    setAddImagePreview(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAddImage(file);
+      setAddImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadBrandImage = async (brandId: string, file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const path = `${brandId}.${ext}`;
+    const { error } = await supabase.storage.from("brand-images").upload(path, file, { upsert: true });
+    if (error) { toast.error("Image upload failed"); return null; }
+    const { data } = supabase.storage.from("brand-images").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const handleAdd = async () => {
