@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield
+  ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield, ImagePlus
 } from "lucide-react";
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number };
