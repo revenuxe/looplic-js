@@ -145,7 +145,7 @@ const ServicesTab = () => {
 
   const handleEdit = async (table: string, id: string) => {
     if (!editName.trim()) return;
-    const { error } = await supabase.from(table).update({ name: editName.trim() }).eq("id", id);
+    const { error } = await (supabase.from(table as any) as any).update({ name: editName.trim() }).eq("id", id);
     if (error) toast.error(error.message);
     else {
       toast.success("Updated");
