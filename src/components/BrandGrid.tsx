@@ -52,9 +52,9 @@ const BrandGrid = () => {
               Tap a brand to explore models
             </p>
           </div>
-          <button className="flex items-center gap-0.5 text-xs font-bold text-primary">
+          <Link to="/brands" className="flex items-center gap-0.5 text-xs font-bold text-primary">
             View All <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
 
         {loading ? (
