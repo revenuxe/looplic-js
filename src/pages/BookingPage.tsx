@@ -237,6 +237,7 @@ const BookingPage = () => {
                         maxLength={10}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
+                    </div>
                     <button
                       type="submit"
                       disabled={submitting || !name.trim() || !phone.trim()}
