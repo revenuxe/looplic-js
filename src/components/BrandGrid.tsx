@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 type Brand = {
@@ -51,9 +52,9 @@ const BrandGrid = () => {
               Tap a brand to explore models
             </p>
           </div>
-          <button className="flex items-center gap-0.5 text-xs font-bold text-primary">
+          <Link to="/brands" className="flex items-center gap-0.5 text-xs font-bold text-primary">
             View All <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
 
         {loading ? (
@@ -63,26 +64,27 @@ const BrandGrid = () => {
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 md:gap-3">
             {brands.map((brand, i) => (
-              <motion.button
-                key={brand.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.25, delay: i * 0.03 }}
-                whileTap={{ scale: 0.93 }}
-                className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:bg-secondary/60 transition-all duration-200 cursor-pointer"
-              >
-                {brand.image_url ? (
-                  <img src={brand.image_url} alt={brand.name} className="w-10 h-10 rounded-xl object-contain" />
-                ) : (
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${brand.gradient} flex items-center justify-center shadow-sm`}>
-                    <span className="text-xs font-extrabold text-primary-foreground">{brand.letter}</span>
-                  </div>
-                )}
-                <span className="text-[11px] font-bold text-foreground">
-                  {brand.name}
-                </span>
-              </motion.button>
+              <Link to={`/brands/${brand.id}`} key={brand.id}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.25, delay: i * 0.03 }}
+                  whileTap={{ scale: 0.93 }}
+                  className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:bg-secondary/60 transition-all duration-200 cursor-pointer"
+                >
+                  {brand.image_url ? (
+                    <img src={brand.image_url} alt={brand.name} className="w-10 h-10 rounded-xl object-contain" />
+                  ) : (
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${brand.gradient} flex items-center justify-center shadow-sm`}>
+                      <span className="text-xs font-extrabold text-primary-foreground">{brand.letter}</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] font-bold text-foreground">
+                    {brand.name}
+                  </span>
+                </motion.div>
+              </Link>
             ))}
           </div>
         )}
