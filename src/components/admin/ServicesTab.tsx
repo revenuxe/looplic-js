@@ -132,7 +132,7 @@ const ServicesTab = () => {
   };
 
   const handleDelete = async (table: string, id: string) => {
-    const { error } = await supabase.from(table).delete().eq("id", id);
+    const { error } = await (supabase.from(table as any) as any).delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
       toast.success("Deleted");
