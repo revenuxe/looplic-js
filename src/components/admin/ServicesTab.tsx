@@ -387,9 +387,13 @@ const ServicesTab = () => {
             : (currentItems as { id: string; name: string }[]).map((item) => (
                 <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
                   {level === "brands" && (
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${(item as Brand).gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
-                      {(item as Brand).letter}
-                    </div>
+                    (item as Brand).image_url ? (
+                      <img src={(item as Brand).image_url!} alt={(item as Brand).name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+                    ) : (
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${(item as Brand).gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
+                        {(item as Brand).letter}
+                      </div>
+                    )
                   )}
 
                   <div className="flex-1 min-w-0">
