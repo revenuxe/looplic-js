@@ -7,6 +7,10 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AdminLogin from "./pages/AdminLogin.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
+import BrandsPage from "./pages/BrandsPage.tsx";
+import SeriesPage from "./pages/SeriesPage.tsx";
+import ModelsPage from "./pages/ModelsPage.tsx";
+import BookingPage from "./pages/BookingPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +22,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/brands" element={<BrandsPage />} />
+          <Route path="/brands/:brandId" element={<SeriesPage />} />
+          <Route path="/brands/:brandId/:seriesId" element={<ModelsPage />} />
+          <Route path="/brands/:brandId/:seriesId/:modelId" element={<BookingPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

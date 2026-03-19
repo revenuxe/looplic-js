@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Loader2, ChevronRight, Shield, Check, Phone, User, Loader2 as Spinner } from "lucide-react";
+import { Loader2, ChevronRight, Shield, Check, Phone, User } from "lucide-react";
 import { toast } from "sonner";
 
 type Guard = { id: string; guard_type: string; price: number };
