@@ -67,6 +67,8 @@ const BookingPage = () => {
       customer_phone: phone.trim(),
       model_id: modelId!,
       guard_type: selectedGuard.guard_type,
+      location: location.trim() || null,
+      pincode: pincode.trim() || null,
     });
 
     if (error) {
