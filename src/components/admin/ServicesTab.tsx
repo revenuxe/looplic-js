@@ -2,10 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield
+  ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield, ImagePlus
 } from "lucide-react";
 
-type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number };
+type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null };
 type Series = { id: string; brand_id: string; name: string };
 type Model = { id: string; series_id: string; name: string };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
@@ -80,6 +80,10 @@ const ServicesTab = () => {
 
   useEffect(() => { fetchBrands(); }, [fetchBrands]);
 
+  // Image upload state
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+
   const resetAdd = () => {
     setShowAdd(false);
     setAddName("");
@@ -87,6 +91,25 @@ const ServicesTab = () => {
     setAddGradient(gradientOptions[0]);
     setAddGuardType(guardTypeOptions[0]);
     setAddPrice("");
+    setAddImage(null);
+    setAddImagePreview(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAddImage(file);
+      setAddImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadBrandImage = async (brandId: string, file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const path = `${brandId}.${ext}`;
+    const { error } = await supabase.storage.from("brand-images").upload(path, file, { upsert: true });
+    if (error) { toast.error("Image upload failed"); return null; }
+    const { data } = supabase.storage.from("brand-images").getPublicUrl(path);
+    return data.publicUrl;
   };
 
   const handleAdd = async () => {
@@ -98,11 +121,18 @@ const ServicesTab = () => {
     let error;
 
     if (level === "brands") {
-      ({ error } = await supabase.from("brands").insert({
+      const { data: inserted, error: insertErr } = await supabase.from("brands").insert({
         name: addName.trim(),
         letter: (addLetter.trim() || addName.charAt(0)).toUpperCase(),
         gradient: addGradient,
-      }));
+      }).select().single();
+      error = insertErr;
+      if (!error && inserted && addImage) {
+        const imageUrl = await uploadBrandImage(inserted.id, addImage);
+        if (imageUrl) {
+          await supabase.from("brands").update({ image_url: imageUrl }).eq("id", inserted.id);
+        }
+      }
       if (!error) fetchBrands();
     } else if (level === "series" && selectedBrand) {
       ({ error } = await supabase.from("series").insert({
@@ -276,28 +306,44 @@ const ServicesTab = () => {
                 autoFocus
               />
               {level === "brands" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
-                    <input
-                      placeholder="A"
-                      maxLength={2}
-                      value={addLetter}
-                      onChange={(e) => setAddLetter(e.target.value)}
-                      className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
+                      <input
+                        placeholder="A"
+                        maxLength={2}
+                        value={addLetter}
+                        onChange={(e) => setAddLetter(e.target.value)}
+                        className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {gradientOptions.map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setAddGradient(g)}
+                            className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${addGradient === g ? "border-foreground scale-110" : "border-transparent"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {gradientOptions.map(g => (
-                        <button
-                          key={g}
-                          onClick={() => setAddGradient(g)}
-                          className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${addGradient === g ? "border-foreground scale-110" : "border-transparent"}`}
-                        />
-                      ))}
-                    </div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Brand Logo (optional)</label>
+                    <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-lg p-3 hover:border-primary/40 transition-colors">
+                      {addImagePreview ? (
+                        <img src={addImagePreview} alt="Preview" className="w-10 h-10 rounded-lg object-contain" />
+                      ) : (
+                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                      )}
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {addImage ? addImage.name : "Click to upload logo"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                    </label>
                   </div>
                 </div>
               )}
@@ -341,9 +387,13 @@ const ServicesTab = () => {
             : (currentItems as { id: string; name: string }[]).map((item) => (
                 <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
                   {level === "brands" && (
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${(item as Brand).gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
-                      {(item as Brand).letter}
-                    </div>
+                    (item as Brand).image_url ? (
+                      <img src={(item as Brand).image_url!} alt={(item as Brand).name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+                    ) : (
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${(item as Brand).gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
+                        {(item as Brand).letter}
+                      </div>
+                    )
                   )}
 
                   <div className="flex-1 min-w-0">
