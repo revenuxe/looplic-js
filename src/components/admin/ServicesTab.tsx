@@ -381,7 +381,7 @@ const ServicesTab = () => {
                     </div>
                   )}
 
-                  {level !== "guards" && editId !== item.id && (
+                  {(level as string) !== "guards" && editId !== item.id && (
                     <button
                       onClick={() => {
                         if (level === "brands") navigateTo("series", item as Brand);
