@@ -60,6 +60,7 @@ export type Database = {
           created_at: string
           gradient: string
           id: string
+          image_url: string | null
           letter: string
           name: string
           sort_order: number
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string
           gradient?: string
           id?: string
+          image_url?: string | null
           letter?: string
           name: string
           sort_order?: number
@@ -76,6 +78,7 @@ export type Database = {
           created_at?: string
           gradient?: string
           id?: string
+          image_url?: string | null
           letter?: string
           name?: string
           sort_order?: number
