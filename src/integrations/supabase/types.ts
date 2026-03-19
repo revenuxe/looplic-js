@@ -21,8 +21,10 @@ export type Database = {
           customer_phone: string
           guard_type: string | null
           id: string
+          location: string | null
           model_id: string | null
           notes: string | null
+          pincode: string | null
           status: string
         }
         Insert: {
@@ -31,8 +33,10 @@ export type Database = {
           customer_phone: string
           guard_type?: string | null
           id?: string
+          location?: string | null
           model_id?: string | null
           notes?: string | null
+          pincode?: string | null
           status?: string
         }
         Update: {
@@ -41,8 +45,10 @@ export type Database = {
           customer_phone?: string
           guard_type?: string | null
           id?: string
+          location?: string | null
           model_id?: string | null
           notes?: string | null
+          pincode?: string | null
           status?: string
         }
         Relationships: [

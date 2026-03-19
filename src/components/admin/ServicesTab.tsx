@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield, ImagePlus
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown
 } from "lucide-react";
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null };
@@ -10,445 +11,483 @@ type Series = { id: string; brand_id: string; name: string };
 type Model = { id: string; series_id: string; name: string };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
 
-type Level = "brands" | "series" | "models" | "guards";
-
 const gradientOptions = [
-  "from-blue-500 to-cyan-500",
-  "from-violet-500 to-purple-600",
-  "from-amber-400 to-orange-500",
-  "from-emerald-400 to-teal-500",
-  "from-rose-500 to-pink-500",
-  "from-indigo-500 to-blue-600",
-  "from-yellow-400 to-amber-500",
-  "from-cyan-400 to-blue-500",
-  "from-fuchsia-500 to-purple-500",
+  "from-blue-500 to-cyan-500", "from-violet-500 to-purple-600", "from-amber-400 to-orange-500",
+  "from-emerald-400 to-teal-500", "from-rose-500 to-pink-500", "from-indigo-500 to-blue-600",
+  "from-yellow-400 to-amber-500", "from-cyan-400 to-blue-500", "from-fuchsia-500 to-purple-500",
 ];
 
 const guardTypeOptions = ["Tempered Glass", "Privacy Guard", "Matte Guard", "UV Glass", "Ceramic Guard"];
 
-const ServicesTab = () => {
-  const [level, setLevel] = useState<Level>("brands");
+// ─── Reusable Modal ─────────────────────────────
+const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+      <div
+        className="relative bg-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-border shadow-xl max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card rounded-t-3xl sm:rounded-t-2xl z-10">
+          <span className="text-sm font-bold text-foreground">{title}</span>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary text-muted-foreground"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Brands Tab ─────────────────────────────
+const BrandsTab = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [seriesList, setSeriesList] = useState<Series[]>([]);
-  const [models, setModels] = useState<Model[]>([]);
-  const [guards, setGuards] = useState<Guard[]>([]);
-  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
-  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Add form states
   const [showAdd, setShowAdd] = useState(false);
-  const [addName, setAddName] = useState("");
-  const [addLetter, setAddLetter] = useState("");
-  const [addGradient, setAddGradient] = useState(gradientOptions[0]);
-  const [addGuardType, setAddGuardType] = useState(guardTypeOptions[0]);
-  const [addPrice, setAddPrice] = useState("");
+  const [name, setName] = useState("");
+  const [letter, setLetter] = useState("");
+  const [gradient, setGradient] = useState(gradientOptions[0]);
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // Edit states
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
-  const fetchBrands = useCallback(async () => {
+  const fetch = async () => {
     setLoading(true);
     const { data } = await supabase.from("brands").select("*").order("sort_order").order("name");
     if (data) setBrands(data);
     setLoading(false);
-  }, []);
+  };
+  useEffect(() => { fetch(); }, []);
 
-  const fetchSeries = useCallback(async (brandId: string) => {
+  const uploadImage = async (id: string, file: File) => {
+    const ext = file.name.split(".").pop();
+    const { error } = await supabase.storage.from("brand-images").upload(`${id}.${ext}`, file, { upsert: true });
+    if (error) return null;
+    return supabase.storage.from("brand-images").getPublicUrl(`${id}.${ext}`).data.publicUrl;
+  };
+
+  const handleAdd = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    const { data, error } = await supabase.from("brands").insert({
+      name: name.trim(), letter: (letter.trim() || name.charAt(0)).toUpperCase(), gradient,
+    }).select().single();
+    if (!error && data && image) {
+      const url = await uploadImage(data.id, image);
+      if (url) await supabase.from("brands").update({ image_url: url }).eq("id", data.id);
+    }
+    if (error) toast.error(error.message); else { toast.success("Brand added"); reset(); fetch(); }
+    setSaving(false);
+  };
+
+  const handleEdit = async (id: string) => {
+    if (!editName.trim()) return;
+    await (supabase.from("brands" as any) as any).update({ name: editName.trim() }).eq("id", id);
+    setEditId(null); fetch(); toast.success("Updated");
+  };
+
+  const handleDelete = async (id: string) => {
+    await (supabase.from("brands" as any) as any).delete().eq("id", id);
+    fetch(); toast.success("Deleted");
+  };
+
+  const reset = () => { setShowAdd(false); setName(""); setLetter(""); setGradient(gradientOptions[0]); setImage(null); setImagePreview(null); };
+
+  return (
+    <div>
+      <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Brand</button>
+
+      <Modal open={showAdd} onClose={reset} title="Add Brand">
+        <div className="space-y-3">
+          <input placeholder="Brand name" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
+              <input placeholder="A" maxLength={2} value={letter} onChange={(e) => setLetter(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
+              <div className="flex gap-1.5 flex-wrap">{gradientOptions.map(g => <button key={g} onClick={() => setGradient(g)} className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${gradient === g ? "border-foreground scale-110" : "border-transparent"}`} />)}</div>
+            </div>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-xl p-3 hover:border-primary/40 transition-colors">
+            {imagePreview ? <img src={imagePreview} alt="" className="w-10 h-10 rounded-lg object-contain" /> : <ImagePlus className="w-5 h-5 text-muted-foreground" />}
+            <span className="text-xs text-muted-foreground font-medium">{image ? image.name : "Upload logo (optional)"}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setImage(f); setImagePreview(URL.createObjectURL(f)); } }} />
+          </label>
+          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Brand
+          </button>
+        </div>
+      </Modal>
+
+      {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : brands.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground"><Shield className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No brands yet</p></div>
+      ) : (
+        <div className="space-y-2">
+          {brands.map((b) => (
+            <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
+              {b.image_url ? <img src={b.image_url} alt={b.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${b.gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>{b.letter}</div>}
+              <div className="flex-1 min-w-0">
+                {editId === b.id ? (
+                  <div className="flex items-center gap-2">
+                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(b.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
+                    <button onClick={() => handleEdit(b.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : <span className="text-sm font-semibold text-foreground">{b.name}</span>}
+              </div>
+              {editId !== b.id && (
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => { setEditId(b.id); setEditName(b.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Series Tab ─────────────────────────────
+const SeriesTab = () => {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  useEffect(() => { supabase.from("brands").select("*").order("name").then(({ data }) => { if (data) setBrands(data); }); }, []);
+
+  const fetchSeries = async (brandId: string) => {
     setLoading(true);
     const { data } = await supabase.from("series").select("*").eq("brand_id", brandId).order("name");
     if (data) setSeriesList(data);
     setLoading(false);
-  }, []);
+  };
 
-  const fetchModels = useCallback(async (seriesId: string) => {
+  useEffect(() => { if (selectedBrand) fetchSeries(selectedBrand); else setSeriesList([]); }, [selectedBrand]);
+
+  const handleAdd = async () => {
+    if (!name.trim() || !selectedBrand) return;
+    setSaving(true);
+    const { error } = await supabase.from("series").insert({ brand_id: selectedBrand, name: name.trim() });
+    if (error) toast.error(error.message); else { toast.success("Series added"); setShowAdd(false); setName(""); fetchSeries(selectedBrand); }
+    setSaving(false);
+  };
+
+  const handleEdit = async (id: string) => {
+    if (!editName.trim()) return;
+    await (supabase.from("series" as any) as any).update({ name: editName.trim() }).eq("id", id);
+    setEditId(null); fetchSeries(selectedBrand); toast.success("Updated");
+  };
+
+  const handleDelete = async (id: string) => {
+    await (supabase.from("series" as any) as any).delete().eq("id", id);
+    fetchSeries(selectedBrand); toast.success("Deleted");
+  };
+
+  return (
+    <div>
+      <div className="mb-4">
+        <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Select Brand</label>
+        <div className="relative">
+          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+            <option value="">Choose brand...</option>
+            {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {selectedBrand && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Series</button>}
+
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); }} title="Add Series">
+        <div className="space-y-3">
+          <input placeholder="Series name (e.g. iPhone 16)" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Series
+          </button>
+        </div>
+      </Modal>
+
+      {!selectedBrand ? <p className="text-xs text-muted-foreground text-center py-8">Select a brand first</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : seriesList.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground"><Layers className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No series yet</p></div>
+      ) : (
+        <div className="space-y-2">
+          {seriesList.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
+              <div className="flex-1 min-w-0">
+                {editId === s.id ? (
+                  <div className="flex items-center gap-2">
+                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(s.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
+                    <button onClick={() => handleEdit(s.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : <span className="text-sm font-semibold text-foreground">{s.name}</span>}
+              </div>
+              {editId !== s.id && (
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => { setEditId(s.id); setEditName(s.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Models Tab ─────────────────────────────
+const ModelsTab = () => {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedSeries, setSelectedSeries] = useState("");
+  const [models, setModels] = useState<Model[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  useEffect(() => { supabase.from("brands").select("*").order("name").then(({ data }) => { if (data) setBrands(data); }); }, []);
+  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else { setSeriesList([]); } setSelectedSeries(""); }, [selectedBrand]);
+
+  const fetchModels = async (seriesId: string) => {
     setLoading(true);
     const { data } = await supabase.from("models").select("*").eq("series_id", seriesId).order("name");
     if (data) setModels(data);
     setLoading(false);
-  }, []);
+  };
 
-  const fetchGuards = useCallback(async (modelId: string) => {
+  useEffect(() => { if (selectedSeries) fetchModels(selectedSeries); else setModels([]); }, [selectedSeries]);
+
+  const handleAdd = async () => {
+    if (!name.trim() || !selectedSeries) return;
+    setSaving(true);
+    const { error } = await supabase.from("models").insert({ series_id: selectedSeries, name: name.trim() });
+    if (error) toast.error(error.message); else { toast.success("Model added"); setShowAdd(false); setName(""); fetchModels(selectedSeries); }
+    setSaving(false);
+  };
+
+  const handleEdit = async (id: string) => {
+    if (!editName.trim()) return;
+    await (supabase.from("models" as any) as any).update({ name: editName.trim() }).eq("id", id);
+    setEditId(null); fetchModels(selectedSeries); toast.success("Updated");
+  };
+
+  const handleDelete = async (id: string) => {
+    await (supabase.from("models" as any) as any).delete().eq("id", id);
+    fetchModels(selectedSeries); toast.success("Deleted");
+  };
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Brand</label>
+          <div className="relative">
+            <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+              <option value="">Choose...</option>
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Series</label>
+          <div className="relative">
+            <select value={selectedSeries} onChange={(e) => setSelectedSeries(e.target.value)} disabled={!selectedBrand} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none disabled:opacity-50">
+              <option value="">Choose...</option>
+              {seriesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+      </div>
+
+      {selectedSeries && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Model</button>}
+
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); }} title="Add Model">
+        <div className="space-y-3">
+          <input placeholder="Model name (e.g. iPhone 16 Pro Max)" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Model
+          </button>
+        </div>
+      </Modal>
+
+      {!selectedSeries ? <p className="text-xs text-muted-foreground text-center py-8">{!selectedBrand ? "Select brand & series" : "Select a series"}</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : models.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground"><Smartphone className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No models yet</p></div>
+      ) : (
+        <div className="space-y-2">
+          {models.map((m) => (
+            <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
+              <div className="flex-1 min-w-0">
+                {editId === m.id ? (
+                  <div className="flex items-center gap-2">
+                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(m.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
+                    <button onClick={() => handleEdit(m.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
+                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : <span className="text-sm font-semibold text-foreground">{m.name}</span>}
+              </div>
+              {editId !== m.id && (
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => { setEditId(m.id); setEditName(m.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Screen Guards Tab ─────────────────────────────
+const ScreenGuardsTab = () => {
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedSeries, setSelectedSeries] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [guards, setGuards] = useState<Guard[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [guardType, setGuardType] = useState(guardTypeOptions[0]);
+  const [price, setPrice] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { supabase.from("brands").select("*").order("name").then(({ data }) => { if (data) setBrands(data); }); }, []);
+  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
+  useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
+
+  const fetchGuards = async (modelId: string) => {
     setLoading(true);
     const { data } = await supabase.from("model_screen_guards").select("*").eq("model_id", modelId).order("guard_type");
     if (data) setGuards(data);
     setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchBrands(); }, [fetchBrands]);
-
-  // Image upload state
-  const [addImage, setAddImage] = useState<File | null>(null);
-  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
-
-  const resetAdd = () => {
-    setShowAdd(false);
-    setAddName("");
-    setAddLetter("");
-    setAddGradient(gradientOptions[0]);
-    setAddGuardType(guardTypeOptions[0]);
-    setAddPrice("");
-    setAddImage(null);
-    setAddImagePreview(null);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAddImage(file);
-      setAddImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const uploadBrandImage = async (brandId: string, file: File): Promise<string | null> => {
-    const ext = file.name.split(".").pop();
-    const path = `${brandId}.${ext}`;
-    const { error } = await supabase.storage.from("brand-images").upload(path, file, { upsert: true });
-    if (error) { toast.error("Image upload failed"); return null; }
-    const { data } = supabase.storage.from("brand-images").getPublicUrl(path);
-    return data.publicUrl;
-  };
+  useEffect(() => { if (selectedModel) fetchGuards(selectedModel); else setGuards([]); }, [selectedModel]);
 
   const handleAdd = async () => {
-    if (level === "guards") {
-      if (!addPrice) return;
-    } else if (!addName.trim()) return;
-
+    if (!price || !selectedModel) return;
     setSaving(true);
-    let error;
-
-    if (level === "brands") {
-      const { data: inserted, error: insertErr } = await supabase.from("brands").insert({
-        name: addName.trim(),
-        letter: (addLetter.trim() || addName.charAt(0)).toUpperCase(),
-        gradient: addGradient,
-      }).select().single();
-      error = insertErr;
-      if (!error && inserted && addImage) {
-        const imageUrl = await uploadBrandImage(inserted.id, addImage);
-        if (imageUrl) {
-          await supabase.from("brands").update({ image_url: imageUrl }).eq("id", inserted.id);
-        }
-      }
-      if (!error) fetchBrands();
-    } else if (level === "series" && selectedBrand) {
-      ({ error } = await supabase.from("series").insert({
-        brand_id: selectedBrand.id,
-        name: addName.trim(),
-      }));
-      if (!error) fetchSeries(selectedBrand.id);
-    } else if (level === "models" && selectedSeries) {
-      ({ error } = await supabase.from("models").insert({
-        series_id: selectedSeries.id,
-        name: addName.trim(),
-      }));
-      if (!error) fetchModels(selectedSeries.id);
-    } else if (level === "guards" && selectedModel) {
-      ({ error } = await supabase.from("model_screen_guards").insert({
-        model_id: selectedModel.id,
-        guard_type: addGuardType,
-        price: parseFloat(addPrice),
-      }));
-      if (!error) fetchGuards(selectedModel.id);
-    }
-
-    if (error) toast.error(error.message);
-    else toast.success("Added successfully");
+    const { error } = await supabase.from("model_screen_guards").insert({ model_id: selectedModel, guard_type: guardType, price: parseFloat(price) });
+    if (error) toast.error(error.message); else { toast.success("Guard added"); setShowAdd(false); setPrice(""); fetchGuards(selectedModel); }
     setSaving(false);
-    resetAdd();
   };
 
-  const handleDelete = async (table: string, id: string) => {
-    const { error } = await (supabase.from(table as any) as any).delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Deleted");
-      if (level === "brands") fetchBrands();
-      else if (level === "series" && selectedBrand) fetchSeries(selectedBrand.id);
-      else if (level === "models" && selectedSeries) fetchModels(selectedSeries.id);
-      else if (level === "guards" && selectedModel) fetchGuards(selectedModel.id);
-    }
+  const handleDelete = async (id: string) => {
+    await (supabase.from("model_screen_guards" as any) as any).delete().eq("id", id);
+    fetchGuards(selectedModel); toast.success("Deleted");
   };
-
-  const handleEdit = async (table: string, id: string) => {
-    if (!editName.trim()) return;
-    const { error } = await (supabase.from(table as any) as any).update({ name: editName.trim() }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Updated");
-      setEditId(null);
-      if (level === "brands") fetchBrands();
-      else if (level === "series" && selectedBrand) fetchSeries(selectedBrand.id);
-      else if (level === "models" && selectedSeries) fetchModels(selectedSeries.id);
-    }
-  };
-
-  const navigateTo = (newLevel: Level, brand?: Brand, series?: Series, model?: Model) => {
-    resetAdd();
-    setEditId(null);
-    if (newLevel === "brands") {
-      setLevel("brands");
-      setSelectedBrand(null);
-      setSelectedSeries(null);
-      setSelectedModel(null);
-    } else if (newLevel === "series" && brand) {
-      setSelectedBrand(brand);
-      setSelectedSeries(null);
-      setSelectedModel(null);
-      setLevel("series");
-      fetchSeries(brand.id);
-    } else if (newLevel === "models" && series) {
-      setSelectedSeries(series);
-      setSelectedModel(null);
-      setLevel("models");
-      fetchModels(series.id);
-    } else if (newLevel === "guards" && model) {
-      setSelectedModel(model);
-      setLevel("guards");
-      fetchGuards(model.id);
-    }
-  };
-
-  const goBack = () => {
-    resetAdd();
-    setEditId(null);
-    if (level === "guards") navigateTo("models", undefined, selectedSeries!);
-    else if (level === "models") navigateTo("series", selectedBrand!);
-    else if (level === "series") navigateTo("brands");
-  };
-
-  const breadcrumbs = [
-    { label: "Brands", onClick: () => navigateTo("brands"), active: level === "brands" },
-    ...(selectedBrand ? [{ label: selectedBrand.name, onClick: () => navigateTo("series", selectedBrand), active: level === "series" }] : []),
-    ...(selectedSeries ? [{ label: selectedSeries.name, onClick: () => navigateTo("models", undefined, selectedSeries), active: level === "models" }] : []),
-    ...(selectedModel ? [{ label: selectedModel.name, onClick: () => {}, active: level === "guards" }] : []),
-  ];
-
-  const currentItems = level === "brands" ? brands : level === "series" ? seriesList : level === "models" ? models : guards;
-  const tableName = level === "brands" ? "brands" : level === "series" ? "series" : level === "models" ? "models" : "model_screen_guards";
-  const itemLabel = level === "brands" ? "Brand" : level === "series" ? "Series" : level === "models" ? "Model" : "Screen Guard";
 
   return (
-    <div className="mt-4">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-1 text-xs font-semibold mb-4 flex-wrap">
-        {level !== "brands" && (
-          <button onClick={goBack} className="p-1 rounded-md hover:bg-secondary text-muted-foreground mr-1">
-            <ArrowLeft className="w-3.5 h-3.5" />
-          </button>
-        )}
-        {breadcrumbs.map((bc, i) => (
-          <span key={i} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground" />}
-            <button
-              onClick={bc.onClick}
-              className={`px-2 py-0.5 rounded-md transition-colors ${bc.active ? "text-foreground bg-secondary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {bc.label}
-            </button>
-          </span>
-        ))}
+    <div>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div>
+          <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Brand</label>
+          <div className="relative">
+            <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="w-full text-xs border border-border rounded-xl px-2 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+              <option value="">Choose...</option>
+              {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Series</label>
+          <div className="relative">
+            <select value={selectedSeries} onChange={(e) => setSelectedSeries(e.target.value)} disabled={!selectedBrand} className="w-full text-xs border border-border rounded-xl px-2 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none disabled:opacity-50">
+              <option value="">Choose...</option>
+              {seriesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Model</label>
+          <div className="relative">
+            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedSeries} className="w-full text-xs border border-border rounded-xl px-2 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none disabled:opacity-50">
+              <option value="">Choose...</option>
+              {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
       </div>
 
-      {/* Add button */}
-      {!showAdd && (
-        <button
-          onClick={() => setShowAdd(true)}
-          className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" /> Add {itemLabel}
-        </button>
-      )}
+      {selectedModel && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Screen Guard</button>}
 
-      {/* Add form */}
-      {showAdd && (
-        <div className="mb-4 p-4 rounded-xl bg-card border border-border space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-foreground">Add {itemLabel}</span>
-            <button onClick={resetAdd} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setPrice(""); }} title="Add Screen Guard">
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Guard Type</label>
+            <div className="relative">
+              <select value={guardType} onChange={(e) => setGuardType(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                {guardTypeOptions.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
-
-          {level === "guards" ? (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Guard Type</label>
-                  <select
-                    value={addGuardType}
-                    onChange={(e) => setAddGuardType(e.target.value)}
-                    className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  >
-                    {guardTypeOptions.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
-                  <input
-                    type="number"
-                    placeholder="99"
-                    value={addPrice}
-                    onChange={(e) => setAddPrice(e.target.value)}
-                    className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <input
-                placeholder={`${itemLabel} name`}
-                value={addName}
-                onChange={(e) => setAddName(e.target.value)}
-                className="w-full text-sm border border-border rounded-lg px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                autoFocus
-              />
-              {level === "brands" && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
-                      <input
-                        placeholder="A"
-                        maxLength={2}
-                        value={addLetter}
-                        onChange={(e) => setAddLetter(e.target.value)}
-                        className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {gradientOptions.map(g => (
-                          <button
-                            key={g}
-                            onClick={() => setAddGradient(g)}
-                            className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${addGradient === g ? "border-foreground scale-110" : "border-transparent"}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Brand Logo (optional)</label>
-                    <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-lg p-3 hover:border-primary/40 transition-colors">
-                      {addImagePreview ? (
-                        <img src={addImagePreview} alt="Preview" className="w-10 h-10 rounded-lg object-contain" />
-                      ) : (
-                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
-                      )}
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {addImage ? addImage.name : "Click to upload logo"}
-                      </span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-                    </label>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          <button
-            onClick={handleAdd}
-            disabled={saving}
-            className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Add {itemLabel}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
+            <input type="number" placeholder="99" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Guard
           </button>
         </div>
-      )}
+      </Modal>
 
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-      ) : currentItems.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Shield className="w-8 h-8 mx-auto mb-2 opacity-30" />
-          <p className="text-sm font-semibold">No {itemLabel.toLowerCase()}s yet</p>
-          <p className="text-xs mt-1">Click "Add {itemLabel}" to get started</p>
-        </div>
+      {!selectedModel ? <p className="text-xs text-muted-foreground text-center py-8">Select brand, series & model</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : guards.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground"><Tag className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No guards yet</p></div>
       ) : (
         <div className="space-y-2">
-          {level === "guards"
-            ? (guards as Guard[]).map((g) => (
-                <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-bold text-foreground">{g.guard_type}</span>
-                    <span className="ml-2 text-sm font-extrabold text-primary">₹{g.price}</span>
-                  </div>
-                  <button onClick={() => handleDelete("model_screen_guards", g.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))
-            : (currentItems as { id: string; name: string }[]).map((item) => (
-                <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
-                  {level === "brands" && (
-                    (item as Brand).image_url ? (
-                      <img src={(item as Brand).image_url!} alt={(item as Brand).name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
-                    ) : (
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${(item as Brand).gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
-                        {(item as Brand).letter}
-                      </div>
-                    )
-                  )}
-
-                  <div className="flex-1 min-w-0">
-                    {editId === item.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none"
-                          autoFocus
-                          onKeyDown={(e) => e.key === "Enter" && handleEdit(tableName, item.id)}
-                        />
-                        <button onClick={() => handleEdit(tableName, item.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
-                        <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
-                      </div>
-                    ) : (
-                      <span className="text-sm font-semibold text-foreground">{item.name}</span>
-                    )}
-                  </div>
-
-                  {editId !== item.id && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => { setEditId(item.id); setEditName(item.name); }}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(tableName, item.id)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  {(level as string) !== "guards" && editId !== item.id && (
-                    <button
-                      onClick={() => {
-                        if (level === "brands") navigateTo("series", item as Brand);
-                        else if (level === "series") navigateTo("models", undefined, item as Series);
-                        else if (level === "models") navigateTo("guards", undefined, undefined, item as Model);
-                      }}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))
-          }
+          {guards.map((g) => (
+            <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              <div className="flex-1"><span className="text-sm font-bold text-foreground">{g.guard_type}</span><span className="ml-2 text-sm font-extrabold text-primary">₹{g.price}</span></div>
+              <button onClick={() => handleDelete(g.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+            </div>
+          ))}
         </div>
       )}
     </div>
+  );
+};
+
+// ─── Main ServicesTab ─────────────────────────────
+const ServicesTab = () => {
+  return (
+    <Tabs defaultValue="brands" className="mt-4">
+      <TabsList className="w-full grid grid-cols-4 h-9">
+        <TabsTrigger value="brands" className="text-[11px] gap-1"><Tag className="w-3 h-3" />Brands</TabsTrigger>
+        <TabsTrigger value="series" className="text-[11px] gap-1"><Layers className="w-3 h-3" />Series</TabsTrigger>
+        <TabsTrigger value="models" className="text-[11px] gap-1"><Smartphone className="w-3 h-3" />Models</TabsTrigger>
+        <TabsTrigger value="guards" className="text-[11px] gap-1"><Shield className="w-3 h-3" />Guards</TabsTrigger>
+      </TabsList>
+      <TabsContent value="brands"><BrandsTab /></TabsContent>
+      <TabsContent value="series"><SeriesTab /></TabsContent>
+      <TabsContent value="models"><ModelsTab /></TabsContent>
+      <TabsContent value="guards"><ScreenGuardsTab /></TabsContent>
+    </Tabs>
   );
 };
 

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Loader2, ChevronRight, Shield, Check, Phone, User } from "lucide-react";
+import { Loader2, ChevronRight, Shield, Check, Phone, User, MapPin, Hash } from "lucide-react";
 import { toast } from "sonner";
 
 type Guard = { id: string; guard_type: string; price: number };
@@ -29,6 +29,8 @@ const BookingPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [pincode, setPincode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
 
@@ -65,6 +67,8 @@ const BookingPage = () => {
       customer_phone: phone.trim(),
       model_id: modelId!,
       guard_type: selectedGuard.guard_type,
+      location: location.trim() || null,
+      pincode: pincode.trim() || null,
     });
 
     if (error) {
@@ -209,6 +213,28 @@ const BookingPage = () => {
                         onChange={(e) => setPhone(e.target.value)}
                         required
                         maxLength={15}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Location / Address"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        maxLength={200}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Pincode"
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        maxLength={10}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
