@@ -217,7 +217,7 @@ const BookingPage = () => {
                       disabled={submitting || !name.trim() || !phone.trim()}
                       className="w-full py-3.5 rounded-2xl gradient-brand text-primary-foreground text-sm font-extrabold disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
                     >
-                      {submitting ? <Spinner className="w-4 h-4 animate-spin" /> : null}
+                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       {submitting ? "Booking..." : `Book Now — ₹${selectedGuard.price}`}
                     </button>
                   </form>
