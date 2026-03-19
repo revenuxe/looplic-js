@@ -17,7 +17,7 @@ const BrandGrid = () => {
   return (
     <section className="py-10 md:py-16 bg-background">
       <div className="container">
-        <div className="flex items-center justify-between mb-6 px-1">
+        <div className="flex items-center justify-between mb-5 px-1">
           <div>
             <h2 className="text-xl md:text-3xl font-extrabold text-foreground">
               Browse by Brand
@@ -31,20 +31,19 @@ const BrandGrid = () => {
           </button>
         </div>
 
-        {/* Horizontal scroll on mobile */}
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide md:grid md:grid-cols-5 md:overflow-visible">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5 md:gap-3">
           {brands.map((brand, i) => (
             <motion.button
               key={brand.name}
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: i * 0.04 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex-shrink-0 snap-start flex flex-col items-center gap-2.5 p-4 w-[88px] rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-95 transition-all duration-200 cursor-pointer"
+              transition={{ duration: 0.25, delay: i * 0.03 }}
+              whileTap={{ scale: 0.93 }}
+              className="flex flex-col items-center gap-2 py-3.5 px-2 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:bg-secondary/60 transition-all duration-200 cursor-pointer"
             >
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${brand.gradient} flex items-center justify-center`}>
-                <span className="text-sm font-extrabold text-primary-foreground">{brand.letter}</span>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${brand.gradient} flex items-center justify-center shadow-sm`}>
+                <span className="text-xs font-extrabold text-primary-foreground">{brand.letter}</span>
               </div>
               <span className="text-[11px] font-bold text-foreground">
                 {brand.name}
