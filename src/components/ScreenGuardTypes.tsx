@@ -3,42 +3,43 @@ import { Shield, Eye, Sun, Sparkles, Check } from "lucide-react";
 import { useState } from "react";
 
 const guardTypes = [
-{
-  icon: Shield,
-  name: "Tempered Glass",
-  desc: "9H hardness, crystal clear protection",
-  price: "₹299",
-  tag: "Best Seller",
-  features: ["Anti-scratch", "HD Clarity", "Easy apply"],
-  gradient: "from-blue-500 to-cyan-500"
-},
-{
-  icon: Eye,
-  name: "Privacy Guard",
-  desc: "Anti-spy, visible only from front",
-  price: "₹499",
-  tag: null,
-  features: ["180° privacy", "Tempered", "Smudge-free"],
-  gradient: "from-violet-500 to-purple-600"
-},
-{
-  icon: Sun,
-  name: "Matte Guard",
-  desc: "Smooth touch, zero reflections",
-  price: "₹399",
-  tag: null,
-  features: ["Anti-glare", "Fingerprint-free", "Smooth feel"],
-  gradient: "from-amber-400 to-orange-500"
-},
-{
-  icon: Sparkles,
-  name: "UV Glass",
-  desc: "Full-edge coverage, UV bonded",
-  price: "₹699",
-  tag: "Premium",
-  features: ["Full coverage", "UV cured", "Curved fit"],
-  gradient: "from-emerald-400 to-teal-500"
-}];
+  {
+    icon: Shield,
+    name: "Tempered Glass",
+    desc: "9H hardness, crystal clear protection",
+    price: "₹99",
+    tag: "Best Seller",
+    features: ["Anti-scratch", "HD Clarity", "Easy apply"],
+    gradient: "from-blue-500 to-cyan-500"
+  },
+  {
+    icon: Eye,
+    name: "Privacy Guard",
+    desc: "Anti-spy, visible only from front",
+    price: "₹149",
+    tag: null,
+    features: ["180° privacy", "Tempered", "Smudge-free"],
+    gradient: "from-violet-500 to-purple-600"
+  },
+  {
+    icon: Sun,
+    name: "Matte Guard",
+    desc: "Smooth touch, zero reflections",
+    price: "₹99",
+    tag: null,
+    features: ["Anti-glare", "Fingerprint-free", "Smooth feel"],
+    gradient: "from-amber-400 to-orange-500"
+  },
+  {
+    icon: Sparkles,
+    name: "UV Glass",
+    desc: "Full-edge coverage, UV bonded",
+    price: "₹199",
+    tag: "Premium",
+    features: ["Full coverage", "UV cured", "Curved fit"],
+    gradient: "from-emerald-400 to-teal-500"
+  }
+];
 
 
 const ScreenGuardTypes = () => {
