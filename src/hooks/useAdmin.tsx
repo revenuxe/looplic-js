@@ -7,43 +7,51 @@ export function useAdmin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+  const checkAdminRole = async (currentUser: User | null) => {
+    if (!currentUser) {
+      setUser(null);
+      setIsAdmin(false);
+      setLoading(false);
+      return;
+    }
 
-        if (currentUser) {
-          const { data } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", currentUser.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          setIsAdmin(!!data);
-        } else {
-          setIsAdmin(false);
+    setUser(currentUser);
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUser.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    } catch {
+      setIsAdmin(false);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    let ignore = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!ignore) {
+          checkAdminRole(session?.user ?? null);
         }
-        setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", currentUser.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        setIsAdmin(!!data);
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!ignore) {
+        checkAdminRole(session?.user ?? null);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
