@@ -5,7 +5,7 @@ import {
   ChevronRight, Plus, Trash2, Pencil, ArrowLeft, Loader2, X, Check, Shield, ImagePlus
 } from "lucide-react";
 
-type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number };
+type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null };
 type Series = { id: string; brand_id: string; name: string };
 type Model = { id: string; series_id: string; name: string };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
