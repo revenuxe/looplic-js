@@ -121,11 +121,18 @@ const ServicesTab = () => {
     let error;
 
     if (level === "brands") {
-      ({ error } = await supabase.from("brands").insert({
+      const { data: inserted, error: insertErr } = await supabase.from("brands").insert({
         name: addName.trim(),
         letter: (addLetter.trim() || addName.charAt(0)).toUpperCase(),
         gradient: addGradient,
-      }));
+      }).select().single();
+      error = insertErr;
+      if (!error && inserted && addImage) {
+        const imageUrl = await uploadBrandImage(inserted.id, addImage);
+        if (imageUrl) {
+          await supabase.from("brands").update({ image_url: imageUrl }).eq("id", inserted.id);
+        }
+      }
       if (!error) fetchBrands();
     } else if (level === "series" && selectedBrand) {
       ({ error } = await supabase.from("series").insert({
