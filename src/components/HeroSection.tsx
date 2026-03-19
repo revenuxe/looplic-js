@@ -17,8 +17,8 @@ const phoneModels = [
 const quickPicks = ["iPhone 16 Pro", "Galaxy S24", "Pixel 9", "OnePlus 12"];
 
 const stats = [
-  { value: "50K+", label: "Installs" },
-  { value: "4.9★", label: "Rating" },
+  { value: "500+", label: "Installs" },
+  { value: "4.8★", label: "Rating" },
   { value: "30min", label: "Service" },
 ];
 
