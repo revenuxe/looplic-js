@@ -306,28 +306,44 @@ const ServicesTab = () => {
                 autoFocus
               />
               {level === "brands" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
-                    <input
-                      placeholder="A"
-                      maxLength={2}
-                      value={addLetter}
-                      onChange={(e) => setAddLetter(e.target.value)}
-                      className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
+                      <input
+                        placeholder="A"
+                        maxLength={2}
+                        value={addLetter}
+                        onChange={(e) => setAddLetter(e.target.value)}
+                        className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {gradientOptions.map(g => (
+                          <button
+                            key={g}
+                            onClick={() => setAddGradient(g)}
+                            className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${addGradient === g ? "border-foreground scale-110" : "border-transparent"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {gradientOptions.map(g => (
-                        <button
-                          key={g}
-                          onClick={() => setAddGradient(g)}
-                          className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${addGradient === g ? "border-foreground scale-110" : "border-transparent"}`}
-                        />
-                      ))}
-                    </div>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1 block">Brand Logo (optional)</label>
+                    <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-lg p-3 hover:border-primary/40 transition-colors">
+                      {addImagePreview ? (
+                        <img src={addImagePreview} alt="Preview" className="w-10 h-10 rounded-lg object-contain" />
+                      ) : (
+                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                      )}
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {addImage ? addImage.name : "Click to upload logo"}
+                      </span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+                    </label>
                   </div>
                 </div>
               )}
