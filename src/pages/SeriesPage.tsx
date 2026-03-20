@@ -53,25 +53,22 @@ const SeriesPage = () => {
               <p className="text-xs text-muted-foreground mt-1">Check back soon!</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
               {seriesList.map((s, i) => (
                 <motion.div
                   key={s.id}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25, delay: i * 0.04 }}
                 >
                   <Link
                     to={`/brands/${brandId}/${s.id}`}
-                    className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-[0.98] transition-all"
+                    className="flex flex-col items-center justify-center p-5 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-[0.98] transition-all text-center gap-2"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                        <Smartphone className="w-5 h-5 text-primary" />
-                      </div>
-                      <span className="text-sm font-bold text-foreground">{s.name}</span>
+                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center">
+                      <Smartphone className="w-6 h-6 text-primary" />
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-bold text-foreground">{s.name}</span>
                   </Link>
                 </motion.div>
               ))}
