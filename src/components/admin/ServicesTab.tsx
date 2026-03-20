@@ -3,21 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown, Grid3X3
 } from "lucide-react";
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null };
 type Series = { id: string; brand_id: string; name: string };
 type Model = { id: string; series_id: string; name: string };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
+type GuardCategory = { id: string; name: string };
+type GuardType = { id: string; category_id: string; name: string };
 
 const gradientOptions = [
   "from-blue-500 to-cyan-500", "from-violet-500 to-purple-600", "from-amber-400 to-orange-500",
   "from-emerald-400 to-teal-500", "from-rose-500 to-pink-500", "from-indigo-500 to-blue-600",
   "from-yellow-400 to-amber-500", "from-cyan-400 to-blue-500", "from-fuchsia-500 to-purple-500",
 ];
-
-const guardTypeOptions = ["Tempered Glass", "Privacy Guard", "Matte Guard", "UV Glass", "Ceramic Guard"];
 
 // ─── Reusable Modal ─────────────────────────────
 const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
@@ -358,8 +358,150 @@ const ModelsTab = () => {
   );
 };
 
-// ─── Screen Guards Tab ─────────────────────────────
-const ScreenGuardsTab = () => {
+// ─── Screen Guards Tab (Categories + Types) ─────────────────────────────
+const ScreenGuardsManageTab = () => {
+  const [categories, setCategories] = useState<GuardCategory[]>([]);
+  const [types, setTypes] = useState<GuardType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCat, setSelectedCat] = useState("");
+  const [showAddCat, setShowAddCat] = useState(false);
+  const [showAddType, setShowAddType] = useState(false);
+  const [catName, setCatName] = useState("");
+  const [typeName, setTypeName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editCatId, setEditCatId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("screen_guard_categories").select("*").order("name");
+    if (data) setCategories(data);
+    setLoading(false);
+  };
+
+  const fetchTypes = async (catId: string) => {
+    const { data } = await supabase.from("screen_guard_types").select("*").eq("category_id", catId).order("name");
+    if (data) setTypes(data);
+  };
+
+  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { if (selectedCat) fetchTypes(selectedCat); else setTypes([]); }, [selectedCat]);
+
+  const handleAddCat = async () => {
+    if (!catName.trim()) return;
+    setSaving(true);
+    const { error } = await supabase.from("screen_guard_categories").insert({ name: catName.trim() });
+    if (error) toast.error(error.message); else { toast.success("Category added"); setShowAddCat(false); setCatName(""); fetchCategories(); }
+    setSaving(false);
+  };
+
+  const handleEditCat = async (id: string) => {
+    if (!editCatName.trim()) return;
+    await (supabase.from("screen_guard_categories" as any) as any).update({ name: editCatName.trim() }).eq("id", id);
+    setEditCatId(null); fetchCategories(); toast.success("Updated");
+  };
+
+  const handleDeleteCat = async (id: string) => {
+    await (supabase.from("screen_guard_categories" as any) as any).delete().eq("id", id);
+    if (selectedCat === id) { setSelectedCat(""); setTypes([]); }
+    fetchCategories(); toast.success("Deleted");
+  };
+
+  const handleAddType = async () => {
+    if (!typeName.trim() || !selectedCat) return;
+    setSaving(true);
+    const { error } = await supabase.from("screen_guard_types").insert({ category_id: selectedCat, name: typeName.trim() });
+    if (error) toast.error(error.message); else { toast.success("Type added"); setShowAddType(false); setTypeName(""); fetchTypes(selectedCat); }
+    setSaving(false);
+  };
+
+  const handleDeleteType = async (id: string) => {
+    await (supabase.from("screen_guard_types" as any) as any).delete().eq("id", id);
+    fetchTypes(selectedCat); toast.success("Deleted");
+  };
+
+  return (
+    <div>
+      {/* Categories Section */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-bold text-foreground">Screen Guard Categories</span>
+          <button onClick={() => setShowAddCat(true)} className="flex items-center gap-1 text-[10px] font-bold text-primary"><Plus className="w-3 h-3" /> Add Category</button>
+        </div>
+
+        <Modal open={showAddCat} onClose={() => { setShowAddCat(false); setCatName(""); }} title="Add Category">
+          <div className="space-y-3">
+            <input placeholder="Category name (e.g. Flat Screen)" value={catName} onChange={(e) => setCatName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <button onClick={handleAddCat} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Category
+            </button>
+          </div>
+        </Modal>
+
+        {loading ? <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : categories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground"><Grid3X3 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-xs font-semibold">No categories yet</p></div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => (
+              <div key={c.id} className={`relative group flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 cursor-pointer transition-all text-xs font-bold ${selectedCat === c.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/40"}`}>
+                <button onClick={() => setSelectedCat(selectedCat === c.id ? "" : c.id)} className="flex-1 text-left">
+                  {editCatId === c.id ? (
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <input value={editCatName} onChange={(e) => setEditCatName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEditCat(c.id)} className="w-20 text-xs border border-border rounded-lg px-1.5 py-0.5 bg-background text-foreground focus:outline-none" />
+                      <button onClick={() => handleEditCat(c.id)} className="text-primary"><Check className="w-3 h-3" /></button>
+                      <button onClick={() => setEditCatId(null)} className="text-muted-foreground"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : c.name}
+                </button>
+                {editCatId !== c.id && (
+                  <div className="hidden group-hover:flex items-center gap-0.5">
+                    <button onClick={(e) => { e.stopPropagation(); setEditCatId(c.id); setEditCatName(c.name); }} className="p-0.5 text-muted-foreground hover:text-foreground"><Pencil className="w-2.5 h-2.5" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDeleteCat(c.id); }} className="p-0.5 text-muted-foreground hover:text-destructive"><Trash2 className="w-2.5 h-2.5" /></button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Types Section */}
+      {selectedCat && (
+        <div className="border-t border-border pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-foreground">Types in "{categories.find(c => c.id === selectedCat)?.name}"</span>
+            <button onClick={() => setShowAddType(true)} className="flex items-center gap-1 text-[10px] font-bold text-primary"><Plus className="w-3 h-3" /> Add Type</button>
+          </div>
+
+          <Modal open={showAddType} onClose={() => { setShowAddType(false); setTypeName(""); }} title="Add Type">
+            <div className="space-y-3">
+              <input placeholder="Type name (e.g. 11D, Privacy, Matte)" value={typeName} onChange={(e) => setTypeName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <button onClick={handleAddType} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Type
+              </button>
+            </div>
+          </Modal>
+
+          {types.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground"><p className="text-xs font-semibold">No types yet</p></div>
+          ) : (
+            <div className="space-y-2">
+              {types.map((t) => (
+                <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                  <span className="flex-1 text-sm font-semibold text-foreground">{t.name}</span>
+                  <button onClick={() => handleDeleteType(t.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Model Guards Tab (Assign guards to models) ─────────────────────────────
+const ModelGuardsTab = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [models, setModels] = useState<Model[]>([]);
@@ -369,13 +511,18 @@ const ScreenGuardsTab = () => {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [guardType, setGuardType] = useState(guardTypeOptions[0]);
+  const [categories, setCategories] = useState<GuardCategory[]>([]);
+  const [guardTypes, setGuardTypes] = useState<GuardType[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedType, setSelectedType] = useState("");
   const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { supabase.from("brands").select("*").order("name").then(({ data }) => { if (data) setBrands(data); }); }, []);
+  useEffect(() => { supabase.from("screen_guard_categories").select("*").order("name").then(({ data }) => { if (data) setCategories(data); }); }, []);
   useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
   useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
+  useEffect(() => { if (selectedCategory) { supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name").then(({ data }) => { if (data) setGuardTypes(data); }); } else setGuardTypes([]); setSelectedType(""); }, [selectedCategory]);
 
   const fetchGuards = async (modelId: string) => {
     setLoading(true);
@@ -387,10 +534,23 @@ const ScreenGuardsTab = () => {
   useEffect(() => { if (selectedModel) fetchGuards(selectedModel); else setGuards([]); }, [selectedModel]);
 
   const handleAdd = async () => {
-    if (!price || !selectedModel) return;
+    if (!price || !selectedModel || !selectedType) return;
+    const typeName = guardTypes.find(t => t.id === selectedType)?.name || "";
+    const catName = categories.find(c => c.id === selectedCategory)?.name || "";
+    const guardLabel = `${catName} - ${typeName}`;
     setSaving(true);
-    const { error } = await supabase.from("model_screen_guards").insert({ model_id: selectedModel, guard_type: guardType, price: parseFloat(price) });
-    if (error) toast.error(error.message); else { toast.success("Guard added"); setShowAdd(false); setPrice(""); fetchGuards(selectedModel); }
+    const { error } = await supabase.from("model_screen_guards").insert({ model_id: selectedModel, guard_type: guardLabel, price: parseFloat(price) });
+    if (error) toast.error(error.message); else { toast.success("Guard added"); setShowAdd(false); setPrice(""); setSelectedCategory(""); setSelectedType(""); fetchGuards(selectedModel); }
+    setSaving(false);
+  };
+
+  const handleAddAll = async () => {
+    if (!price || !selectedModel || !selectedCategory || guardTypes.length === 0) return;
+    const catName = categories.find(c => c.id === selectedCategory)?.name || "";
+    setSaving(true);
+    const inserts = guardTypes.map(t => ({ model_id: selectedModel, guard_type: `${catName} - ${t.name}`, price: parseFloat(price) }));
+    const { error } = await supabase.from("model_screen_guards").insert(inserts);
+    if (error) toast.error(error.message); else { toast.success(`${inserts.length} guards added`); setShowAdd(false); setPrice(""); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
   };
 
@@ -436,24 +596,47 @@ const ScreenGuardsTab = () => {
 
       {selectedModel && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Screen Guard</button>}
 
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setPrice(""); }} title="Add Screen Guard">
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setPrice(""); setSelectedCategory(""); setSelectedType(""); }} title="Add Screen Guard">
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Guard Type</label>
+            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Category</label>
             <div className="relative">
-              <select value={guardType} onChange={(e) => setGuardType(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
-                {guardTypeOptions.map(g => <option key={g} value={g}>{g}</option>)}
+              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                <option value="">Choose category...</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
+
+          {selectedCategory && guardTypes.length > 0 && (
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
+              <div className="flex flex-wrap gap-1.5">
+                {guardTypes.map(t => (
+                  <button key={t.id} onClick={() => setSelectedType(t.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all ${selectedType === t.id ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/40"}`}>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
             <input type="number" placeholder="99" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
-          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Guard
-          </button>
+
+          <div className="flex gap-2">
+            <button onClick={handleAdd} disabled={saving || !selectedType || !price} className="flex-1 py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Selected
+            </button>
+            {selectedCategory && guardTypes.length > 0 && price && (
+              <button onClick={handleAddAll} disabled={saving} className="py-2.5 px-3 rounded-xl border-2 border-primary text-primary text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1">
+                <Layers className="w-3 h-3" /> Add All
+              </button>
+            )}
+          </div>
         </div>
       </Modal>
 
@@ -477,16 +660,18 @@ const ScreenGuardsTab = () => {
 const ServicesTab = () => {
   return (
     <Tabs defaultValue="brands" className="mt-4">
-      <TabsList className="w-full grid grid-cols-4 h-9">
-        <TabsTrigger value="brands" className="text-[11px] gap-1"><Tag className="w-3 h-3" />Brands</TabsTrigger>
-        <TabsTrigger value="series" className="text-[11px] gap-1"><Layers className="w-3 h-3" />Series</TabsTrigger>
-        <TabsTrigger value="models" className="text-[11px] gap-1"><Smartphone className="w-3 h-3" />Models</TabsTrigger>
-        <TabsTrigger value="guards" className="text-[11px] gap-1"><Shield className="w-3 h-3" />Guards</TabsTrigger>
+      <TabsList className="w-full grid grid-cols-5 h-9">
+        <TabsTrigger value="brands" className="text-[10px] gap-1"><Tag className="w-3 h-3" />Brands</TabsTrigger>
+        <TabsTrigger value="series" className="text-[10px] gap-1"><Layers className="w-3 h-3" />Series</TabsTrigger>
+        <TabsTrigger value="models" className="text-[10px] gap-1"><Smartphone className="w-3 h-3" />Models</TabsTrigger>
+        <TabsTrigger value="screenguards" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Guards</TabsTrigger>
+        <TabsTrigger value="assign" className="text-[10px] gap-1"><Shield className="w-3 h-3" />Assign</TabsTrigger>
       </TabsList>
       <TabsContent value="brands"><BrandsTab /></TabsContent>
       <TabsContent value="series"><SeriesTab /></TabsContent>
       <TabsContent value="models"><ModelsTab /></TabsContent>
-      <TabsContent value="guards"><ScreenGuardsTab /></TabsContent>
+      <TabsContent value="screenguards"><ScreenGuardsManageTab /></TabsContent>
+      <TabsContent value="assign"><ModelGuardsTab /></TabsContent>
     </Tabs>
   );
 };
