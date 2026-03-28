@@ -197,7 +197,7 @@ const BookingPage = () => {
                 >
                   <h3 className="text-sm font-extrabold text-foreground mb-1">Book Installation</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {selectedGuard.guard_type} — <span className="font-bold text-primary">₹{selectedGuard.price}</span>
+                    {displayGuardType(selectedGuard.guard_type)} — <span className="font-bold text-primary">₹{selectedGuard.price}</span>
                   </p>
 
                   <form onSubmit={handleBook} className="space-y-3">
