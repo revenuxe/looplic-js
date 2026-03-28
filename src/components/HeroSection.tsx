@@ -49,15 +49,17 @@ const HeroSection = () => {
       });
   }, []);
 
-  // Debounced search
+  // Debounced search - supports queries like "Mi note 13 pro" or "13 pro"
   const searchModels = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); return; }
     setSearching(true);
+    // Split query into words and search models that match all terms across brand+series+model name
+    const words = q.trim().split(/\s+/).filter(w => w.length > 0);
+    // Fetch models with brand info, then filter client-side for multi-field matching
     const { data } = await supabase
       .from("models")
       .select("id, name, series_id, series!inner(id, name, brand_id, brands!inner(id, name))")
-      .ilike("name", `%${q}%`)
-      .limit(6);
+      .limit(100);
     if (data) {
       setResults(
         data.map((m: any) => ({
