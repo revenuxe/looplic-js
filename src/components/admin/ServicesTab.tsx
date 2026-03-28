@@ -11,7 +11,7 @@ type Series = { id: string; brand_id: string; name: string };
 type Model = { id: string; series_id: string; name: string };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
 type GuardCategory = { id: string; name: string };
-type GuardType = { id: string; category_id: string; name: string; image_url: string | null };
+type GuardType = { id: string; category_id: string; name: string; image_url: string | null; price: number };
 
 const gradientOptions = [
   "from-blue-500 to-cyan-500", "from-violet-500 to-purple-600", "from-amber-400 to-orange-500",
@@ -358,7 +358,7 @@ const ModelsTab = () => {
   );
 };
 
-// ─── Screen Guards Tab (Categories + Types with Image) ─────────────────────────────
+// ─── Screen Guards Tab (Categories + Types with Image & Price) ─────────────────────────────
 const ScreenGuardsManageTab = () => {
   const [categories, setCategories] = useState<GuardCategory[]>([]);
   const [types, setTypes] = useState<GuardType[]>([]);
@@ -368,6 +368,7 @@ const ScreenGuardsManageTab = () => {
   const [showAddType, setShowAddType] = useState(false);
   const [catName, setCatName] = useState("");
   const [typeName, setTypeName] = useState("");
+  const [typePrice, setTypePrice] = useState("");
   const [typeImage, setTypeImage] = useState<File | null>(null);
   const [typeImagePreview, setTypeImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -420,13 +421,21 @@ const ScreenGuardsManageTab = () => {
   const handleAddType = async () => {
     if (!typeName.trim() || !selectedCat) return;
     setSaving(true);
-    const { data, error } = await (supabase.from("screen_guard_types") as any).insert({ category_id: selectedCat, name: typeName.trim() }).select().single();
+    const { data, error } = await (supabase.from("screen_guard_types") as any).insert({
+      category_id: selectedCat,
+      name: typeName.trim(),
+      price: typePrice ? parseFloat(typePrice) : 0,
+    }).select().single();
     if (!error && data && typeImage) {
       const url = await uploadTypeImage(data.id, typeImage);
       if (url) await (supabase.from("screen_guard_types" as any) as any).update({ image_url: url }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { toast.success("Type added"); setShowAddType(false); setTypeName(""); setTypeImage(null); setTypeImagePreview(null); fetchTypes(selectedCat); }
+    if (error) toast.error(error.message); else { toast.success("Type added"); resetTypeForm(); fetchTypes(selectedCat); }
     setSaving(false);
+  };
+
+  const resetTypeForm = () => {
+    setShowAddType(false); setTypeName(""); setTypePrice(""); setTypeImage(null); setTypeImagePreview(null);
   };
 
   const handleDeleteType = async (id: string) => {
@@ -486,9 +495,13 @@ const ScreenGuardsManageTab = () => {
             <button onClick={() => setShowAddType(true)} className="flex items-center gap-1 text-[10px] font-bold text-primary"><Plus className="w-3 h-3" /> Add Type</button>
           </div>
 
-          <Modal open={showAddType} onClose={() => { setShowAddType(false); setTypeName(""); setTypeImage(null); setTypeImagePreview(null); }} title="Add Guard Type">
+          <Modal open={showAddType} onClose={resetTypeForm} title="Add Guard Type">
             <div className="space-y-3">
               <input placeholder="Type name (e.g. 11D, Privacy, Matte)" value={typeName} onChange={(e) => setTypeName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground mb-1 block">Default Price (₹)</label>
+                <input type="number" placeholder="99" value={typePrice} onChange={(e) => setTypePrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
               <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-xl p-3 hover:border-primary/40 transition-colors">
                 {typeImagePreview ? <img src={typeImagePreview} alt="" className="w-10 h-10 rounded-lg object-contain" /> : <ImagePlus className="w-5 h-5 text-muted-foreground" />}
                 <span className="text-xs text-muted-foreground font-medium">{typeImage ? typeImage.name : "Upload image (optional)"}</span>
@@ -508,6 +521,7 @@ const ScreenGuardsManageTab = () => {
                 <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                   {t.image_url ? <img src={t.image_url} alt={t.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Shield className="w-4 h-4 text-muted-foreground" /></div>}
                   <span className="flex-1 text-sm font-semibold text-foreground">{t.name}</span>
+                  <span className="text-sm font-extrabold text-primary">₹{t.price}</span>
                   <button onClick={() => handleDeleteType(t.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
@@ -519,7 +533,7 @@ const ScreenGuardsManageTab = () => {
   );
 };
 
-// ─── Model Guards Tab (Assign guards to models) ─────────────────────────────
+// ─── Assign Tab (Select category → auto-assign all types with their prices) ─────────────────────────────
 const ModelGuardsTab = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
@@ -531,17 +545,13 @@ const ModelGuardsTab = () => {
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [categories, setCategories] = useState<GuardCategory[]>([]);
-  const [guardTypes, setGuardTypes] = useState<GuardType[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { supabase.from("brands").select("*").order("name").then(({ data }) => { if (data) setBrands(data); }); }, []);
   useEffect(() => { supabase.from("screen_guard_categories").select("*").order("name").then(({ data }) => { if (data) setCategories(data); }); }, []);
   useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
   useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
-  useEffect(() => { if (selectedCategory) { supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name").then(({ data }) => { if (data) setGuardTypes(data as GuardType[]); }); } else setGuardTypes([]); setSelectedType(""); }, [selectedCategory]);
 
   const fetchGuards = async (modelId: string) => {
     setLoading(true);
@@ -552,24 +562,23 @@ const ModelGuardsTab = () => {
 
   useEffect(() => { if (selectedModel) fetchGuards(selectedModel); else setGuards([]); }, [selectedModel]);
 
-  const handleAdd = async () => {
-    if (!price || !selectedModel || !selectedType) return;
-    const typeName = guardTypes.find(t => t.id === selectedType)?.name || "";
-    const catName = categories.find(c => c.id === selectedCategory)?.name || "";
-    const guardLabel = `${catName} - ${typeName}`;
+  const handleAssignCategory = async () => {
+    if (!selectedModel || !selectedCategory) return;
     setSaving(true);
-    const { error } = await supabase.from("model_screen_guards").insert({ model_id: selectedModel, guard_type: guardLabel, price: parseFloat(price) });
-    if (error) toast.error(error.message); else { toast.success("Guard added"); setShowAdd(false); setPrice(""); setSelectedCategory(""); setSelectedType(""); fetchGuards(selectedModel); }
-    setSaving(false);
-  };
-
-  const handleAddAll = async () => {
-    if (!price || !selectedModel || !selectedCategory || guardTypes.length === 0) return;
-    const catName = categories.find(c => c.id === selectedCategory)?.name || "";
-    setSaving(true);
-    const inserts = guardTypes.map(t => ({ model_id: selectedModel, guard_type: `${catName} - ${t.name}`, price: parseFloat(price) }));
+    // Fetch all types in this category with their prices
+    const { data: guardTypes } = await supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name");
+    if (!guardTypes || guardTypes.length === 0) {
+      toast.error("No guard types in this category");
+      setSaving(false);
+      return;
+    }
+    const inserts = (guardTypes as GuardType[]).map(t => ({
+      model_id: selectedModel,
+      guard_type: t.name,
+      price: t.price,
+    }));
     const { error } = await supabase.from("model_screen_guards").insert(inserts);
-    if (error) toast.error(error.message); else { toast.success(`${inserts.length} guards added`); setShowAdd(false); setPrice(""); setSelectedCategory(""); fetchGuards(selectedModel); }
+    if (error) toast.error(error.message); else { toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
   };
 
@@ -613,10 +622,11 @@ const ModelGuardsTab = () => {
         </div>
       </div>
 
-      {selectedModel && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Screen Guard</button>}
+      {selectedModel && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Assign Guards</button>}
 
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setPrice(""); setSelectedCategory(""); setSelectedType(""); }} title="Add Screen Guard">
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setSelectedCategory(""); }} title="Assign Screen Guards">
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">Select a category to assign all its guard types with their default prices to this model.</p>
           <div>
             <label className="text-xs font-semibold text-muted-foreground mb-1 block">Category</label>
             <div className="relative">
@@ -627,36 +637,9 @@ const ModelGuardsTab = () => {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
-
-          {selectedCategory && guardTypes.length > 0 && (
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Type</label>
-              <div className="flex flex-wrap gap-1.5">
-                {guardTypes.map(t => (
-                  <button key={t.id} onClick={() => setSelectedType(t.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border-2 transition-all flex items-center gap-1.5 ${selectedType === t.id ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/40"}`}>
-                    {t.image_url && <img src={t.image_url} alt="" className="w-4 h-4 rounded object-contain" />}
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
-            <input type="number" placeholder="99" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={saving || !selectedType || !price} className="flex-1 py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Selected
-            </button>
-            {selectedCategory && guardTypes.length > 0 && price && (
-              <button onClick={handleAddAll} disabled={saving} className="py-2.5 px-3 rounded-xl border-2 border-primary text-primary text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1">
-                <Layers className="w-3 h-3" /> Add All
-              </button>
-            )}
-          </div>
+          <button onClick={handleAssignCategory} disabled={saving || !selectedCategory} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />} Assign All Types
+          </button>
         </div>
       </Modal>
 
