@@ -10,12 +10,21 @@ import { toast } from "sonner";
 type Guard = { id: string; guard_type: string; price: number };
 type Breadcrumb = { brandName: string; seriesName: string; modelName: string };
 
+// Strip category prefix like "Flat Screen - " from guard type name
+const displayGuardType = (guardType: string) => {
+  const parts = guardType.split(" - ");
+  return parts.length > 1 ? parts.slice(1).join(" - ") : guardType;
+};
+
 const guardIcons: Record<string, string> = {
   "Tempered Glass": "🛡️",
   "Privacy Guard": "👁️",
+  "Privacy": "👁️",
   "Matte Guard": "☀️",
+  "Matte": "☀️",
   "UV Glass": "✨",
   "Ceramic Guard": "💎",
+  "11D": "🛡️",
 };
 
 const BookingPage = () => {
