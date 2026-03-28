@@ -10,12 +10,21 @@ import { toast } from "sonner";
 type Guard = { id: string; guard_type: string; price: number };
 type Breadcrumb = { brandName: string; seriesName: string; modelName: string };
 
+// Strip category prefix like "Flat Screen - " from guard type name
+const displayGuardType = (guardType: string) => {
+  const parts = guardType.split(" - ");
+  return parts.length > 1 ? parts.slice(1).join(" - ") : guardType;
+};
+
 const guardIcons: Record<string, string> = {
   "Tempered Glass": "🛡️",
   "Privacy Guard": "👁️",
+  "Privacy": "👁️",
   "Matte Guard": "☀️",
+  "Matte": "☀️",
   "UV Glass": "✨",
   "Ceramic Guard": "💎",
+  "11D": "🛡️",
 };
 
 const BookingPage = () => {
@@ -95,7 +104,7 @@ const BookingPage = () => {
             </div>
             <h2 className="text-xl font-extrabold text-foreground mb-2">Booking Confirmed! 🎉</h2>
             <p className="text-sm text-muted-foreground mb-1">
-              {selectedGuard?.guard_type} for <strong>{bc.modelName}</strong>
+              {displayGuardType(selectedGuard?.guard_type || "")} for <strong>{bc.modelName}</strong>
             </p>
             <p className="text-xs text-muted-foreground mb-6">
               We'll contact you at <strong>{phone}</strong> to confirm your slot.
@@ -162,9 +171,9 @@ const BookingPage = () => {
                           : "border-border bg-card shadow-card-brand hover:border-primary/30"
                       }`}
                     >
-                      <span className="text-2xl">{guardIcons[g.guard_type] || "🛡️"}</span>
+                      <span className="text-2xl">{guardIcons[displayGuardType(g.guard_type)] || "🛡️"}</span>
                       <div className="flex-1">
-                        <span className="text-sm font-bold text-foreground">{g.guard_type}</span>
+                        <span className="text-sm font-bold text-foreground">{displayGuardType(g.guard_type)}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-lg font-extrabold gradient-brand-text">₹{g.price}</span>
@@ -188,7 +197,7 @@ const BookingPage = () => {
                 >
                   <h3 className="text-sm font-extrabold text-foreground mb-1">Book Installation</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {selectedGuard.guard_type} — <span className="font-bold text-primary">₹{selectedGuard.price}</span>
+                    {displayGuardType(selectedGuard.guard_type)} — <span className="font-bold text-primary">₹{selectedGuard.price}</span>
                   </p>
 
                   <form onSubmit={handleBook} className="space-y-3">

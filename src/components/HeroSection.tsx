@@ -49,26 +49,32 @@ const HeroSection = () => {
       });
   }, []);
 
-  // Debounced search
+  // Debounced search - supports queries like "Mi note 13 pro" or "13 pro"
   const searchModels = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); return; }
     setSearching(true);
+    // Split query into words and search models that match all terms across brand+series+model name
+    const words = q.trim().split(/\s+/).filter(w => w.length > 0);
+    // Fetch models with brand info, then filter client-side for multi-field matching
     const { data } = await supabase
       .from("models")
       .select("id, name, series_id, series!inner(id, name, brand_id, brands!inner(id, name))")
-      .ilike("name", `%${q}%`)
-      .limit(6);
+      .limit(100);
     if (data) {
-      setResults(
-        data.map((m: any) => ({
-          modelId: m.id,
-          modelName: m.name,
-          seriesId: m.series.id,
-          seriesName: m.series.name,
-          brandId: m.series.brands.id,
-          brandName: m.series.brands.name,
-        }))
-      );
+      const mapped = data.map((m: any) => ({
+        modelId: m.id,
+        modelName: m.name,
+        seriesId: m.series.id,
+        seriesName: m.series.name,
+        brandId: m.series.brands.id,
+        brandName: m.series.brands.name,
+      }));
+      // Filter: every word must appear in the combined "brand series model" string
+      const filtered = mapped.filter((r) => {
+        const combined = `${r.brandName} ${r.seriesName} ${r.modelName}`.toLowerCase();
+        return words.every(w => combined.includes(w.toLowerCase()));
+      }).slice(0, 6);
+      setResults(filtered);
     }
     setSearching(false);
   }, []);
