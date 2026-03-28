@@ -171,9 +171,9 @@ const BookingPage = () => {
                           : "border-border bg-card shadow-card-brand hover:border-primary/30"
                       }`}
                     >
-                      <span className="text-2xl">{guardIcons[g.guard_type] || "🛡️"}</span>
+                      <span className="text-2xl">{guardIcons[displayGuardType(g.guard_type)] || "🛡️"}</span>
                       <div className="flex-1">
-                        <span className="text-sm font-bold text-foreground">{g.guard_type}</span>
+                        <span className="text-sm font-bold text-foreground">{displayGuardType(g.guard_type)}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-lg font-extrabold gradient-brand-text">₹{g.price}</span>
