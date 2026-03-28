@@ -61,16 +61,20 @@ const HeroSection = () => {
       .select("id, name, series_id, series!inner(id, name, brand_id, brands!inner(id, name))")
       .limit(100);
     if (data) {
-      setResults(
-        data.map((m: any) => ({
-          modelId: m.id,
-          modelName: m.name,
-          seriesId: m.series.id,
-          seriesName: m.series.name,
-          brandId: m.series.brands.id,
-          brandName: m.series.brands.name,
-        }))
-      );
+      const mapped = data.map((m: any) => ({
+        modelId: m.id,
+        modelName: m.name,
+        seriesId: m.series.id,
+        seriesName: m.series.name,
+        brandId: m.series.brands.id,
+        brandName: m.series.brands.name,
+      }));
+      // Filter: every word must appear in the combined "brand series model" string
+      const filtered = mapped.filter((r) => {
+        const combined = `${r.brandName} ${r.seriesName} ${r.modelName}`.toLowerCase();
+        return words.every(w => combined.includes(w.toLowerCase()));
+      }).slice(0, 6);
+      setResults(filtered);
     }
     setSearching(false);
   }, []);
