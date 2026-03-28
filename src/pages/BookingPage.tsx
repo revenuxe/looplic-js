@@ -104,7 +104,7 @@ const BookingPage = () => {
             </div>
             <h2 className="text-xl font-extrabold text-foreground mb-2">Booking Confirmed! 🎉</h2>
             <p className="text-sm text-muted-foreground mb-1">
-              {selectedGuard?.guard_type} for <strong>{bc.modelName}</strong>
+              {displayGuardType(selectedGuard?.guard_type || "")} for <strong>{bc.modelName}</strong>
             </p>
             <p className="text-xs text-muted-foreground mb-6">
               We'll contact you at <strong>{phone}</strong> to confirm your slot.
