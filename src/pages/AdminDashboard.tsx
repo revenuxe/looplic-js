@@ -2,10 +2,10 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "@/hooks/useAdmin";
 import logo from "@/assets/looplic-logo.webp";
-import { LogOut, Loader2, Package, CalendarCheck } from "lucide-react";
+import { LogOut, Loader2, Shield, Smartphone, Laptop, CalendarCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import BookingsTab from "@/components/admin/BookingsTab";
-import ServicesTab from "@/components/admin/ServicesTab";
+import { ScreenGuardServicesTab, MobileRepairServicesTab, LaptopRepairServicesTab } from "@/components/admin/ServicesTab";
 
 const AdminDashboard = () => {
   const { user, isAdmin, loading, signOut } = useAdmin();
@@ -46,20 +46,39 @@ const AdminDashboard = () => {
 
       {/* Content */}
       <div className="container py-6">
-        <Tabs defaultValue="services" className="w-full">
-          <TabsList className="w-full max-w-xs">
-            <TabsTrigger value="services" className="flex-1 gap-1.5">
-              <Package className="w-3.5 h-3.5" />
-              Services
+        <Tabs defaultValue="screen-guard" className="w-full">
+          <TabsList className="w-full max-w-lg grid grid-cols-4">
+            <TabsTrigger value="screen-guard" className="gap-1.5 text-xs">
+              <Shield className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Screen Guard</span>
+              <span className="sm:hidden">Guard</span>
             </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex-1 gap-1.5">
+            <TabsTrigger value="mobile-repair" className="gap-1.5 text-xs">
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Mobile Repair</span>
+              <span className="sm:hidden">Mobile</span>
+            </TabsTrigger>
+            <TabsTrigger value="laptop-repair" className="gap-1.5 text-xs">
+              <Laptop className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Laptop Repair</span>
+              <span className="sm:hidden">Laptop</span>
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1.5 text-xs">
               <CalendarCheck className="w-3.5 h-3.5" />
               Bookings
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="services">
-            <ServicesTab />
+          <TabsContent value="screen-guard">
+            <ScreenGuardServicesTab />
+          </TabsContent>
+
+          <TabsContent value="mobile-repair">
+            <MobileRepairServicesTab />
+          </TabsContent>
+
+          <TabsContent value="laptop-repair">
+            <LaptopRepairServicesTab />
           </TabsContent>
 
           <TabsContent value="bookings">

@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
+import ServiceTabs from "@/components/ServiceTabs";
 import BrandGrid from "@/components/BrandGrid";
 import ScreenGuardTypes from "@/components/ScreenGuardTypes";
 import HowItWorks from "@/components/HowItWorks";
@@ -10,6 +11,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <ServiceTabs />
       <HeroSection />
       <BrandGrid />
       <ScreenGuardTypes />

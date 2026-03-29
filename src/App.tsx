@@ -11,6 +11,7 @@ import BrandsPage from "./pages/BrandsPage.tsx";
 import SeriesPage from "./pages/SeriesPage.tsx";
 import ModelsPage from "./pages/ModelsPage.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
+import ServiceLanding from "./pages/ServiceLanding.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,10 @@ const App = () => (
           <Route path="/brands/:brandId" element={<SeriesPage />} />
           <Route path="/brands/:brandId/:seriesId" element={<ModelsPage />} />
           <Route path="/brands/:brandId/:seriesId/:modelId" element={<BookingPage />} />
+          <Route path="/service/:serviceType" element={<ServiceLanding />} />
+          <Route path="/service/:serviceType/brands/:brandId" element={<SeriesPage />} />
+          <Route path="/service/:serviceType/brands/:brandId/:seriesId" element={<ModelsPage />} />
+          <Route path="/service/:serviceType/book/:brandId/:seriesId/:modelId" element={<BookingPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
