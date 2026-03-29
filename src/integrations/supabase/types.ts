@@ -25,6 +25,8 @@ export type Database = {
           model_id: string | null
           notes: string | null
           pincode: string | null
+          repair_category_id: string | null
+          service_type: string
           status: string
         }
         Insert: {
@@ -37,6 +39,8 @@ export type Database = {
           model_id?: string | null
           notes?: string | null
           pincode?: string | null
+          repair_category_id?: string | null
+          service_type?: string
           status?: string
         }
         Update: {
@@ -49,6 +53,8 @@ export type Database = {
           model_id?: string | null
           notes?: string | null
           pincode?: string | null
+          repair_category_id?: string | null
+          service_type?: string
           status?: string
         }
         Relationships: [
@@ -57,6 +63,13 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_repair_category_id_fkey"
+            columns: ["repair_category_id"]
+            isOneToOne: false
+            referencedRelation: "repair_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -69,6 +82,7 @@ export type Database = {
           image_url: string | null
           letter: string
           name: string
+          service_type: string
           sort_order: number
         }
         Insert: {
@@ -78,6 +92,7 @@ export type Database = {
           image_url?: string | null
           letter?: string
           name: string
+          service_type?: string
           sort_order?: number
         }
         Update: {
@@ -87,9 +102,49 @@ export type Database = {
           image_url?: string | null
           letter?: string
           name?: string
+          service_type?: string
           sort_order?: number
         }
         Relationships: []
+      }
+      model_repair_services: {
+        Row: {
+          created_at: string
+          id: string
+          model_id: string
+          price: number
+          repair_category_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_id: string
+          price?: number
+          repair_category_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_id?: string
+          price?: number
+          repair_category_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_repair_services_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_repair_services_repair_category_id_fkey"
+            columns: ["repair_category_id"]
+            isOneToOne: false
+            referencedRelation: "repair_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       model_screen_guards: {
         Row: {
@@ -151,6 +206,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      repair_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          service_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          service_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          service_type?: string
+        }
+        Relationships: []
       }
       screen_guard_categories: {
         Row: {
