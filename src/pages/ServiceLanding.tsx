@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import ServiceTabs from "@/components/ServiceTabs";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ArrowRight, Smartphone, Loader2, Shield, Wrench, Laptop, ChevronRight } from "lucide-react";
@@ -27,7 +28,7 @@ const serviceConfig: Record<string, { title: string; subtitle: string; searchPla
     title: "Mobile Repair",
     subtitle: "Expert mobile repair service at your location",
     searchPlaceholder: "Search your phone model...",
-    icon: <Wrench className="w-6 h-6" />,
+    icon: <Smartphone className="w-6 h-6" />,
     brandServiceType: "mobile",
     color: "from-orange-500 to-red-500",
   },
@@ -105,9 +106,14 @@ const ServiceLanding = () => {
     { value: "30min", label: "Service" },
   ];
 
+  // Split brands into hero (first 6) and rest
+  const heroBrands = brands.slice(0, 6);
+  const hasMoreBrands = brands.length > 6;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <ServiceTabs />
 
       {/* Hero */}
       <section className="relative overflow-hidden pt-8 pb-6 md:pt-16 md:pb-20">
@@ -155,8 +161,45 @@ const ServiceLanding = () => {
             </div>
           </motion.div>
 
+          {/* Brand Picks in Hero */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="mt-8 max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-xs font-bold text-muted-foreground">— Pick a brand —</p>
+              {hasMoreBrands && (
+                <Link to={serviceType === "screen-guard" ? "/brands" : `/service/${serviceType}/brands`} className="flex items-center gap-0.5 text-[10px] font-bold text-primary">
+                  All <ChevronRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+            {loadingBrands ? (
+              <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+            ) : heroBrands.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {heroBrands.map((brand, i) => (
+                  <motion.div key={brand.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 + i * 0.05 }}>
+                    <Link
+                      to={serviceType === "screen-guard" ? `/brands/${brand.id}` : `/service/${serviceType}/brands/${brand.id}`}
+                      className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-95 transition-all"
+                    >
+                      {brand.image_url ? (
+                        <img src={brand.image_url} alt={brand.name} className="w-10 h-10 rounded-xl object-contain" />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${brand.gradient} flex items-center justify-center`}>
+                          <span className="text-xs font-extrabold text-primary-foreground">{brand.letter}</span>
+                        </div>
+                      )}
+                      <span className="text-[10px] font-bold text-foreground">{brand.name}</span>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No brands available yet</p>
+            )}
+          </motion.div>
+
           {/* Stats */}
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.25 }} className="mt-7 max-w-xs mx-auto">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }} className="mt-6 max-w-xs mx-auto">
             <div className="flex items-center justify-around py-3.5 px-3 rounded-2xl bg-card/80 backdrop-blur-sm border border-border shadow-card-brand">
               {stats.map((stat, i) => (
                 <div key={stat.label} className="text-center flex-1 relative">
@@ -170,19 +213,13 @@ const ServiceLanding = () => {
         </div>
       </section>
 
-      {/* Brands Grid */}
-      <section className="py-10">
-        <div className="container">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-extrabold text-foreground">Browse by Brand</h2>
-          </div>
-          {loadingBrands ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : brands.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No brands available yet</p>
-          ) : (
+      {/* Full Brands Grid (remaining) */}
+      {brands.length > 6 && (
+        <section className="py-10">
+          <div className="container">
+            <h2 className="text-lg font-extrabold text-foreground mb-5">More Brands</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {brands.map((brand, i) => (
+              {brands.slice(6).map((brand, i) => (
                 <motion.div key={brand.id} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.03 }}>
                   <Link
                     to={serviceType === "screen-guard" ? `/brands/${brand.id}` : `/service/${serviceType}/brands/${brand.id}`}
@@ -198,9 +235,9 @@ const ServiceLanding = () => {
                 </motion.div>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       <HowItWorks />
       <TrustSignals />
