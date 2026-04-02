@@ -28,6 +28,7 @@ const App = () => (
           <Route path="/brands/:brandId/:seriesId" element={<ModelsPage />} />
           <Route path="/brands/:brandId/:seriesId/:modelId" element={<BookingPage />} />
           <Route path="/service/:serviceType" element={<ServiceLanding />} />
+          <Route path="/service/:serviceType/brands" element={<BrandsPage />} />
           <Route path="/service/:serviceType/brands/:brandId" element={<SeriesPage />} />
           <Route path="/service/:serviceType/brands/:brandId/:seriesId" element={<ModelsPage />} />
           <Route path="/service/:serviceType/book/:brandId/:seriesId/:modelId" element={<BookingPage />} />
