@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown, Grid3X3
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown, Grid3X3, Link2
 } from "lucide-react";
+import ImageUpload from "./ImageUpload";
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
 type Series = { id: string; brand_id: string; name: string };
@@ -49,6 +50,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [gradient, setGradient] = useState(gradientOptions[0]);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -74,9 +76,12 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     const { data, error } = await supabase.from("brands").insert({
       name: name.trim(), letter: (letter.trim() || name.charAt(0)).toUpperCase(), gradient, service_type: serviceType,
     } as any).select().single();
-    if (!error && data && image) {
-      const url = await uploadImage(data.id, image);
-      if (url) await supabase.from("brands").update({ image_url: url }).eq("id", data.id);
+    if (!error && data) {
+      let finalUrl = imageUrl;
+      if (image) {
+        finalUrl = await uploadImage(data.id, image);
+      }
+      if (finalUrl) await supabase.from("brands").update({ image_url: finalUrl }).eq("id", data.id);
     }
     if (error) toast.error(error.message); else { toast.success("Brand added"); reset(); fetch(); }
     setSaving(false);
@@ -93,7 +98,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     fetch(); toast.success("Deleted");
   };
 
-  const reset = () => { setShowAdd(false); setName(""); setLetter(""); setGradient(gradientOptions[0]); setImage(null); setImagePreview(null); };
+  const reset = () => { setShowAdd(false); setName(""); setLetter(""); setGradient(gradientOptions[0]); setImage(null); setImagePreview(null); setImageUrl(null); };
 
   return (
     <div>
@@ -112,11 +117,13 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
               <div className="flex gap-1.5 flex-wrap">{gradientOptions.map(g => <button key={g} onClick={() => setGradient(g)} className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${gradient === g ? "border-foreground scale-110" : "border-transparent"}`} />)}</div>
             </div>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-xl p-3 hover:border-primary/40 transition-colors">
-            {imagePreview ? <img src={imagePreview} alt="" className="w-10 h-10 rounded-lg object-contain" /> : <ImagePlus className="w-5 h-5 text-muted-foreground" />}
-            <span className="text-xs text-muted-foreground font-medium">{image ? image.name : "Upload logo (optional)"}</span>
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setImage(f); setImagePreview(URL.createObjectURL(f)); } }} />
-          </label>
+          <ImageUpload
+            preview={imagePreview || imageUrl}
+            onFileSelect={(f) => { setImage(f); setImagePreview(URL.createObjectURL(f)); setImageUrl(null); }}
+            onUrlSet={(url) => { setImageUrl(url); setImagePreview(null); setImage(null); }}
+            onClear={() => { setImage(null); setImagePreview(null); setImageUrl(null); }}
+            label="Upload brand logo"
+          />
           <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Brand
           </button>
@@ -140,7 +147,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
                 ) : <span className="text-sm font-semibold text-foreground">{b.name}</span>}
               </div>
               {editId !== b.id && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   <button onClick={() => { setEditId(b.id); setEditName(b.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
@@ -235,7 +242,7 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
                 ) : <span className="text-sm font-semibold text-foreground">{s.name}</span>}
               </div>
               {editId !== s.id && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   <button onClick={() => { setEditId(s.id); setEditName(s.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
@@ -345,7 +352,7 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
                 ) : <span className="text-sm font-semibold text-foreground">{m.name}</span>}
               </div>
               {editId !== m.id && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   <button onClick={() => { setEditId(m.id); setEditName(m.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
@@ -371,6 +378,7 @@ const ScreenGuardsManageTab = () => {
   const [typePrice, setTypePrice] = useState("");
   const [typeImage, setTypeImage] = useState<File | null>(null);
   const [typeImagePreview, setTypeImagePreview] = useState<string | null>(null);
+  const [typeImageUrl, setTypeImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editCatId, setEditCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
@@ -382,6 +390,7 @@ const ScreenGuardsManageTab = () => {
   const [showEditType, setShowEditType] = useState(false);
   const [editTypeImage, setEditTypeImage] = useState<File | null>(null);
   const [editTypeImagePreview, setEditTypeImagePreview] = useState<string | null>(null);
+  const [editTypeImageUrl, setEditTypeImageUrl] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   const fetchCategories = async () => {
@@ -430,11 +439,15 @@ const ScreenGuardsManageTab = () => {
   const handleAddType = async () => {
     if (!typeName.trim() || !selectedCat) return;
     setSaving(true);
-    const { data, error } = await (supabase.from("screen_guard_types") as any).insert({
+    const insertData: any = {
       category_id: selectedCat,
       name: typeName.trim(),
       price: typePrice ? parseFloat(typePrice) : 0,
-    }).select().single();
+    };
+    // If URL was provided directly, set it
+    if (typeImageUrl) insertData.image_url = typeImageUrl;
+
+    const { data, error } = await (supabase.from("screen_guard_types") as any).insert(insertData).select().single();
     if (!error && data && typeImage) {
       const url = await uploadTypeImage(data.id, typeImage);
       if (url) await (supabase.from("screen_guard_types" as any) as any).update({ image_url: url }).eq("id", data.id);
@@ -444,7 +457,7 @@ const ScreenGuardsManageTab = () => {
   };
 
   const resetTypeForm = () => {
-    setShowAddType(false); setTypeName(""); setTypePrice(""); setTypeImage(null); setTypeImagePreview(null);
+    setShowAddType(false); setTypeName(""); setTypePrice(""); setTypeImage(null); setTypeImagePreview(null); setTypeImageUrl(null);
   };
 
   const handleDeleteType = async (id: string) => {
@@ -458,6 +471,7 @@ const ScreenGuardsManageTab = () => {
     setEditTypePrice(String(t.price));
     setEditTypeImagePreview(t.image_url);
     setEditTypeImage(null);
+    setEditTypeImageUrl(null);
     setShowEditType(true);
   };
 
@@ -465,7 +479,9 @@ const ScreenGuardsManageTab = () => {
     if (!editTypeId || !editTypeName.trim()) return;
     setEditSaving(true);
     const updates: any = { name: editTypeName.trim(), price: editTypePrice ? parseFloat(editTypePrice) : 0 };
-    if (editTypeImage) {
+    if (editTypeImageUrl) {
+      updates.image_url = editTypeImageUrl;
+    } else if (editTypeImage) {
       const url = await uploadTypeImage(editTypeId, editTypeImage);
       if (url) updates.image_url = url;
     }
@@ -510,7 +526,7 @@ const ScreenGuardsManageTab = () => {
                   ) : c.name}
                 </button>
                 {editCatId !== c.id && (
-                  <div className="hidden group-hover:flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5">
                     <button onClick={(e) => { e.stopPropagation(); setEditCatId(c.id); setEditCatName(c.name); }} className="p-0.5 text-muted-foreground hover:text-foreground"><Pencil className="w-2.5 h-2.5" /></button>
                     <button onClick={(e) => { e.stopPropagation(); handleDeleteCat(c.id); }} className="p-0.5 text-muted-foreground hover:text-destructive"><Trash2 className="w-2.5 h-2.5" /></button>
                   </div>
@@ -536,11 +552,13 @@ const ScreenGuardsManageTab = () => {
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
                 <input type="number" placeholder="99" value={typePrice} onChange={(e) => setTypePrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
-              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-xl p-3 hover:border-primary/40 transition-colors">
-                {typeImagePreview ? <img src={typeImagePreview} alt="" className="w-10 h-10 rounded-lg object-contain" /> : <ImagePlus className="w-5 h-5 text-muted-foreground" />}
-                <span className="text-xs text-muted-foreground font-medium">{typeImage ? typeImage.name : "Upload image (optional)"}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setTypeImage(f); setTypeImagePreview(URL.createObjectURL(f)); } }} />
-              </label>
+              <ImageUpload
+                preview={typeImagePreview || typeImageUrl}
+                onFileSelect={(f) => { setTypeImage(f); setTypeImagePreview(URL.createObjectURL(f)); setTypeImageUrl(null); }}
+                onUrlSet={(url) => { setTypeImageUrl(url); setTypeImagePreview(null); setTypeImage(null); }}
+                onClear={() => { setTypeImage(null); setTypeImagePreview(null); setTypeImageUrl(null); }}
+                label="Upload guard image"
+              />
               <button onClick={handleAddType} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Type
               </button>
@@ -555,11 +573,13 @@ const ScreenGuardsManageTab = () => {
                 <label className="text-xs font-semibold text-muted-foreground mb-1 block">Price (₹)</label>
                 <input type="number" placeholder="99" value={editTypePrice} onChange={(e) => setEditTypePrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
-              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-xl p-3 hover:border-primary/40 transition-colors">
-                {editTypeImagePreview ? <img src={editTypeImagePreview} alt="" className="w-10 h-10 rounded-lg object-contain" /> : <ImagePlus className="w-5 h-5 text-muted-foreground" />}
-                <span className="text-xs text-muted-foreground font-medium">{editTypeImage ? editTypeImage.name : "Change image"}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setEditTypeImage(f); setEditTypeImagePreview(URL.createObjectURL(f)); } }} />
-              </label>
+              <ImageUpload
+                preview={editTypeImagePreview || editTypeImageUrl}
+                onFileSelect={(f) => { setEditTypeImage(f); setEditTypeImagePreview(URL.createObjectURL(f)); setEditTypeImageUrl(null); }}
+                onUrlSet={(url) => { setEditTypeImageUrl(url); setEditTypeImagePreview(null); setEditTypeImage(null); }}
+                onClear={() => { setEditTypeImage(null); setEditTypeImagePreview(null); setEditTypeImageUrl(null); }}
+                label="Change image"
+              />
               <button onClick={handleEditType} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
                 {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Changes
               </button>
@@ -571,11 +591,13 @@ const ScreenGuardsManageTab = () => {
           ) : (
             <div className="space-y-2">
               {types.map((t) => (
-                <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
+                <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                   {t.image_url ? <img src={t.image_url} alt={t.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Shield className="w-4 h-4 text-muted-foreground" /></div>}
-                  <span className="flex-1 text-sm font-semibold text-foreground">{t.name}</span>
-                  <span className="text-sm font-extrabold text-primary">₹{t.price}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-bold text-foreground">{t.name}</span>
+                    <span className="ml-2 text-sm font-extrabold text-primary">₹{t.price}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <button onClick={() => openEditType(t)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                     <button onClick={() => handleDeleteType(t.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
@@ -589,7 +611,7 @@ const ScreenGuardsManageTab = () => {
   );
 };
 
-// ─── Assign Tab ─────────────────────────────
+// ─── Model Guards Assignment Tab ─────────────────────────────
 const ModelGuardsTab = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [seriesList, setSeriesList] = useState<Series[]>([]);
@@ -770,7 +792,7 @@ const RepairCategoriesTab = ({ serviceType }: { serviceType: string }) => {
       ) : (
         <div className="space-y-2">
           {categories.map((c) => (
-            <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
+            <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
               <div className="flex-1 min-w-0">
                 {editId === c.id ? (
                   <div className="flex items-center gap-2">
@@ -781,7 +803,7 @@ const RepairCategoriesTab = ({ serviceType }: { serviceType: string }) => {
                 ) : <span className="text-sm font-semibold text-foreground">{c.name}</span>}
               </div>
               {editId !== c.id && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   <button onClick={() => { setEditId(c.id); setEditName(c.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
