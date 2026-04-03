@@ -182,18 +182,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           name: string
           series_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           series_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           series_id?: string
         }
@@ -211,18 +214,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           name: string
           service_type: string
         }
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           service_type?: string
         }
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           service_type?: string
         }
@@ -286,18 +292,21 @@ export type Database = {
           brand_id: string
           created_at: string
           id: string
+          image_url: string | null
           name: string
         }
         Insert: {
           brand_id: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
         }
         Update: {
           brand_id?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
         }
         Relationships: [

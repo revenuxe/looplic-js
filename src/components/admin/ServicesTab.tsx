@@ -3,22 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, ImagePlus, Tag, Smartphone, Layers, ChevronDown, Grid3X3, Link2
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3
 } from "lucide-react";
 import ImageUpload from "./ImageUpload";
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
-type Series = { id: string; brand_id: string; name: string };
-type Model = { id: string; series_id: string; name: string };
+type Series = { id: string; brand_id: string; name: string; image_url?: string | null };
+type Model = { id: string; series_id: string; name: string; image_url?: string | null };
 type Guard = { id: string; model_id: string; guard_type: string; price: number };
 type GuardCategory = { id: string; name: string };
 type GuardType = { id: string; category_id: string; name: string; image_url: string | null; price: number };
-
-const gradientOptions = [
-  "from-blue-500 to-cyan-500", "from-violet-500 to-purple-600", "from-amber-400 to-orange-500",
-  "from-emerald-400 to-teal-500", "from-rose-500 to-pink-500", "from-indigo-500 to-blue-600",
-  "from-yellow-400 to-amber-500", "from-cyan-400 to-blue-500", "from-fuchsia-500 to-purple-500",
-];
 
 // ─── Reusable Modal ─────────────────────────────
 const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
@@ -40,20 +34,30 @@ const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () 
   );
 };
 
+const uploadServiceImage = async (bucket: string, id: string, file: File) => {
+  const ext = file.name.split(".").pop();
+  const path = `${id}.${ext}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  if (error) return null;
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+};
+
 // ─── Brands Tab ─────────────────────────────
 const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
-  const [letter, setLetter] = useState("");
-  const [gradient, setGradient] = useState(gradientOptions[0]);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editBrand, setEditBrand] = useState<Brand | null>(null);
   const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const fetch = async () => {
     setLoading(true);
@@ -63,34 +67,41 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   };
   useEffect(() => { fetch(); }, [serviceType]);
 
-  const uploadImage = async (id: string, file: File) => {
-    const ext = file.name.split(".").pop();
-    const { error } = await supabase.storage.from("brand-images").upload(`${id}.${ext}`, file, { upsert: true });
-    if (error) return null;
-    return supabase.storage.from("brand-images").getPublicUrl(`${id}.${ext}`).data.publicUrl;
-  };
-
   const handleAdd = async () => {
     if (!name.trim()) return;
     setSaving(true);
     const { data, error } = await supabase.from("brands").insert({
-      name: name.trim(), letter: (letter.trim() || name.charAt(0)).toUpperCase(), gradient, service_type: serviceType,
+      name: name.trim(), letter: name.charAt(0).toUpperCase(), gradient: "from-blue-500 to-cyan-500", service_type: serviceType,
     } as any).select().single();
     if (!error && data) {
       let finalUrl = imageUrl;
-      if (image) {
-        finalUrl = await uploadImage(data.id, image);
-      }
+      if (image) finalUrl = await uploadServiceImage("brand-images", data.id, image);
       if (finalUrl) await supabase.from("brands").update({ image_url: finalUrl }).eq("id", data.id);
     }
     if (error) toast.error(error.message); else { toast.success("Brand added"); reset(); fetch(); }
     setSaving(false);
   };
 
-  const handleEdit = async (id: string) => {
-    if (!editName.trim()) return;
-    await (supabase.from("brands" as any) as any).update({ name: editName.trim() }).eq("id", id);
-    setEditId(null); fetch(); toast.success("Updated");
+  const openEdit = (b: Brand) => {
+    setEditBrand(b);
+    setEditName(b.name);
+    setEditImagePreview(b.image_url);
+    setEditImage(null);
+    setEditImageUrl(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editBrand || !editName.trim()) return;
+    setEditSaving(true);
+    const updates: any = { name: editName.trim() };
+    if (editImageUrl) updates.image_url = editImageUrl;
+    else if (editImage) {
+      const url = await uploadServiceImage("brand-images", editBrand.id, editImage);
+      if (url) updates.image_url = url;
+    }
+    await supabase.from("brands").update(updates).eq("id", editBrand.id);
+    toast.success("Updated"); setEditBrand(null); fetch();
+    setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -98,7 +109,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     fetch(); toast.success("Deleted");
   };
 
-  const reset = () => { setShowAdd(false); setName(""); setLetter(""); setGradient(gradientOptions[0]); setImage(null); setImagePreview(null); setImageUrl(null); };
+  const reset = () => { setShowAdd(false); setName(""); setImage(null); setImagePreview(null); setImageUrl(null); };
 
   return (
     <div>
@@ -107,16 +118,6 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       <Modal open={showAdd} onClose={reset} title="Add Brand">
         <div className="space-y-3">
           <input placeholder="Brand name" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Letter</label>
-              <input placeholder="A" maxLength={2} value={letter} onChange={(e) => setLetter(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Color</label>
-              <div className="flex gap-1.5 flex-wrap">{gradientOptions.map(g => <button key={g} onClick={() => setGradient(g)} className={`w-6 h-6 rounded-full bg-gradient-to-br ${g} border-2 transition-all ${gradient === g ? "border-foreground scale-110" : "border-transparent"}`} />)}</div>
-            </div>
-          </div>
           <ImageUpload
             preview={imagePreview || imageUrl}
             onFileSelect={(f) => { setImage(f); setImagePreview(URL.createObjectURL(f)); setImageUrl(null); }}
@@ -130,28 +131,34 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
         </div>
       </Modal>
 
+      <Modal open={!!editBrand} onClose={() => setEditBrand(null)} title="Edit Brand">
+        <div className="space-y-3">
+          <input placeholder="Brand name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={editImagePreview || editImageUrl}
+            onFileSelect={(f) => { setEditImage(f); setEditImagePreview(URL.createObjectURL(f)); setEditImageUrl(null); }}
+            onUrlSet={(url) => { setEditImageUrl(url); setEditImagePreview(null); setEditImage(null); }}
+            onClear={() => { setEditImage(null); setEditImagePreview(null); setEditImageUrl(null); }}
+            label="Change logo"
+          />
+          <button onClick={handleEdit} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Changes
+          </button>
+        </div>
+      </Modal>
+
       {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : brands.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Shield className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No brands yet</p></div>
       ) : (
         <div className="space-y-2">
           {brands.map((b) => (
-            <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
-              {b.image_url ? <img src={b.image_url} alt={b.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${b.gradient} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>{b.letter}</div>}
-              <div className="flex-1 min-w-0">
-                {editId === b.id ? (
-                  <div className="flex items-center gap-2">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(b.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
-                    <button onClick={() => handleEdit(b.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
-                  </div>
-                ) : <span className="text-sm font-semibold text-foreground">{b.name}</span>}
+            <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              {b.image_url ? <img src={b.image_url} alt={b.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground flex-shrink-0">{b.name.charAt(0)}</div>}
+              <span className="flex-1 text-sm font-semibold text-foreground truncate">{b.name}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
-              {editId !== b.id && (
-                <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditId(b.id); setEditName(b.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -168,16 +175,23 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addImageUrl, setAddImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<Series | null>(null);
   const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", serviceType).order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, [serviceType]);
 
   const fetchSeries = async (brandId: string) => {
     setLoading(true);
     const { data } = await supabase.from("series").select("*").eq("brand_id", brandId).order("name");
-    if (data) setSeriesList(data);
+    if (data) setSeriesList(data as any);
     setLoading(false);
   };
 
@@ -186,15 +200,33 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleAdd = async () => {
     if (!name.trim() || !selectedBrand) return;
     setSaving(true);
-    const { error } = await supabase.from("series").insert({ brand_id: selectedBrand, name: name.trim() });
-    if (error) toast.error(error.message); else { toast.success("Series added"); setShowAdd(false); setName(""); fetchSeries(selectedBrand); }
+    const insertData: any = { brand_id: selectedBrand, name: name.trim() };
+    if (addImageUrl) insertData.image_url = addImageUrl;
+    const { data, error } = await (supabase.from("series") as any).insert(insertData).select().single();
+    if (!error && data && addImage) {
+      const url = await uploadServiceImage("service-images", `series-${data.id}`, addImage);
+      if (url) await (supabase.from("series") as any).update({ image_url: url }).eq("id", data.id);
+    }
+    if (error) toast.error(error.message); else { toast.success("Series added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchSeries(selectedBrand); }
     setSaving(false);
   };
 
-  const handleEdit = async (id: string) => {
-    if (!editName.trim()) return;
-    await (supabase.from("series" as any) as any).update({ name: editName.trim() }).eq("id", id);
-    setEditId(null); fetchSeries(selectedBrand); toast.success("Updated");
+  const openEdit = (s: Series) => {
+    setEditItem(s); setEditName(s.name); setEditImagePreview(s.image_url || null); setEditImage(null); setEditImageUrl(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editItem || !editName.trim()) return;
+    setEditSaving(true);
+    const updates: any = { name: editName.trim() };
+    if (editImageUrl) updates.image_url = editImageUrl;
+    else if (editImage) {
+      const url = await uploadServiceImage("service-images", `series-${editItem.id}`, editImage);
+      if (url) updates.image_url = url;
+    }
+    await (supabase.from("series") as any).update(updates).eq("id", editItem.id);
+    toast.success("Updated"); setEditItem(null); fetchSeries(selectedBrand);
+    setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -217,11 +249,34 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
 
       {selectedBrand && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Series</button>}
 
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); }} title="Add Series">
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }} title="Add Series">
         <div className="space-y-3">
           <input placeholder="Series name" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={addImagePreview || addImageUrl}
+            onFileSelect={(f) => { setAddImage(f); setAddImagePreview(URL.createObjectURL(f)); setAddImageUrl(null); }}
+            onUrlSet={(url) => { setAddImageUrl(url); setAddImagePreview(null); setAddImage(null); }}
+            onClear={() => { setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }}
+            label="Upload series image"
+          />
           <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Series
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Series">
+        <div className="space-y-3">
+          <input placeholder="Series name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={editImagePreview || editImageUrl}
+            onFileSelect={(f) => { setEditImage(f); setEditImagePreview(URL.createObjectURL(f)); setEditImageUrl(null); }}
+            onUrlSet={(url) => { setEditImageUrl(url); setEditImagePreview(null); setEditImage(null); }}
+            onClear={() => { setEditImage(null); setEditImagePreview(null); setEditImageUrl(null); }}
+            label="Change image"
+          />
+          <button onClick={handleEdit} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Changes
           </button>
         </div>
       </Modal>
@@ -231,22 +286,13 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       ) : (
         <div className="space-y-2">
           {seriesList.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
-              <div className="flex-1 min-w-0">
-                {editId === s.id ? (
-                  <div className="flex items-center gap-2">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(s.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
-                    <button onClick={() => handleEdit(s.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
-                  </div>
-                ) : <span className="text-sm font-semibold text-foreground">{s.name}</span>}
+            <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              {s.image_url ? <img src={s.image_url} alt={s.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Layers className="w-4 h-4 text-muted-foreground" /></div>}
+              <span className="flex-1 text-sm font-semibold text-foreground truncate">{s.name}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
-              {editId !== s.id && (
-                <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditId(s.id); setEditName(s.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -265,17 +311,24 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addImageUrl, setAddImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<Model | null>(null);
   const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", serviceType).order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, [serviceType]);
-  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else { setSeriesList([]); } setSelectedSeries(""); }, [selectedBrand]);
+  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else { setSeriesList([]); } setSelectedSeries(""); }, [selectedBrand]);
 
   const fetchModels = async (seriesId: string) => {
     setLoading(true);
     const { data } = await supabase.from("models").select("*").eq("series_id", seriesId).order("name");
-    if (data) setModels(data);
+    if (data) setModels(data as any);
     setLoading(false);
   };
 
@@ -284,15 +337,33 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleAdd = async () => {
     if (!name.trim() || !selectedSeries) return;
     setSaving(true);
-    const { error } = await supabase.from("models").insert({ series_id: selectedSeries, name: name.trim() });
-    if (error) toast.error(error.message); else { toast.success("Model added"); setShowAdd(false); setName(""); fetchModels(selectedSeries); }
+    const insertData: any = { series_id: selectedSeries, name: name.trim() };
+    if (addImageUrl) insertData.image_url = addImageUrl;
+    const { data, error } = await (supabase.from("models") as any).insert(insertData).select().single();
+    if (!error && data && addImage) {
+      const url = await uploadServiceImage("service-images", `model-${data.id}`, addImage);
+      if (url) await (supabase.from("models") as any).update({ image_url: url }).eq("id", data.id);
+    }
+    if (error) toast.error(error.message); else { toast.success("Model added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchModels(selectedSeries); }
     setSaving(false);
   };
 
-  const handleEdit = async (id: string) => {
-    if (!editName.trim()) return;
-    await (supabase.from("models" as any) as any).update({ name: editName.trim() }).eq("id", id);
-    setEditId(null); fetchModels(selectedSeries); toast.success("Updated");
+  const openEdit = (m: Model) => {
+    setEditItem(m); setEditName(m.name); setEditImagePreview(m.image_url || null); setEditImage(null); setEditImageUrl(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editItem || !editName.trim()) return;
+    setEditSaving(true);
+    const updates: any = { name: editName.trim() };
+    if (editImageUrl) updates.image_url = editImageUrl;
+    else if (editImage) {
+      const url = await uploadServiceImage("service-images", `model-${editItem.id}`, editImage);
+      if (url) updates.image_url = url;
+    }
+    await (supabase.from("models") as any).update(updates).eq("id", editItem.id);
+    toast.success("Updated"); setEditItem(null); fetchModels(selectedSeries);
+    setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -327,11 +398,34 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
 
       {selectedSeries && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Model</button>}
 
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); }} title="Add Model">
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }} title="Add Model">
         <div className="space-y-3">
           <input placeholder="Model name" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={addImagePreview || addImageUrl}
+            onFileSelect={(f) => { setAddImage(f); setAddImagePreview(URL.createObjectURL(f)); setAddImageUrl(null); }}
+            onUrlSet={(url) => { setAddImageUrl(url); setAddImagePreview(null); setAddImage(null); }}
+            onClear={() => { setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }}
+            label="Upload model image"
+          />
           <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Model
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Model">
+        <div className="space-y-3">
+          <input placeholder="Model name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={editImagePreview || editImageUrl}
+            onFileSelect={(f) => { setEditImage(f); setEditImagePreview(URL.createObjectURL(f)); setEditImageUrl(null); }}
+            onUrlSet={(url) => { setEditImageUrl(url); setEditImagePreview(null); setEditImage(null); }}
+            onClear={() => { setEditImage(null); setEditImagePreview(null); setEditImageUrl(null); }}
+            label="Change image"
+          />
+          <button onClick={handleEdit} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Changes
           </button>
         </div>
       </Modal>
@@ -341,22 +435,13 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       ) : (
         <div className="space-y-2">
           {models.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border group">
-              <div className="flex-1 min-w-0">
-                {editId === m.id ? (
-                  <div className="flex items-center gap-2">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(m.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
-                    <button onClick={() => handleEdit(m.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
-                  </div>
-                ) : <span className="text-sm font-semibold text-foreground">{m.name}</span>}
+            <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              {m.image_url ? <img src={m.image_url} alt={m.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Smartphone className="w-4 h-4 text-muted-foreground" /></div>}
+              <span className="flex-1 text-sm font-semibold text-foreground truncate">{m.name}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
-              {editId !== m.id && (
-                <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditId(m.id); setEditName(m.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -382,8 +467,6 @@ const ScreenGuardsManageTab = () => {
   const [saving, setSaving] = useState(false);
   const [editCatId, setEditCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
-
-  // Edit type state
   const [editTypeId, setEditTypeId] = useState<string | null>(null);
   const [editTypeName, setEditTypeName] = useState("");
   const [editTypePrice, setEditTypePrice] = useState("");
@@ -439,14 +522,8 @@ const ScreenGuardsManageTab = () => {
   const handleAddType = async () => {
     if (!typeName.trim() || !selectedCat) return;
     setSaving(true);
-    const insertData: any = {
-      category_id: selectedCat,
-      name: typeName.trim(),
-      price: typePrice ? parseFloat(typePrice) : 0,
-    };
-    // If URL was provided directly, set it
+    const insertData: any = { category_id: selectedCat, name: typeName.trim(), price: typePrice ? parseFloat(typePrice) : 0 };
     if (typeImageUrl) insertData.image_url = typeImageUrl;
-
     const { data, error } = await (supabase.from("screen_guard_types") as any).insert(insertData).select().single();
     if (!error && data && typeImage) {
       const url = await uploadTypeImage(data.id, typeImage);
@@ -466,30 +543,21 @@ const ScreenGuardsManageTab = () => {
   };
 
   const openEditType = (t: GuardType) => {
-    setEditTypeId(t.id);
-    setEditTypeName(t.name);
-    setEditTypePrice(String(t.price));
-    setEditTypeImagePreview(t.image_url);
-    setEditTypeImage(null);
-    setEditTypeImageUrl(null);
-    setShowEditType(true);
+    setEditTypeId(t.id); setEditTypeName(t.name); setEditTypePrice(String(t.price));
+    setEditTypeImagePreview(t.image_url); setEditTypeImage(null); setEditTypeImageUrl(null); setShowEditType(true);
   };
 
   const handleEditType = async () => {
     if (!editTypeId || !editTypeName.trim()) return;
     setEditSaving(true);
     const updates: any = { name: editTypeName.trim(), price: editTypePrice ? parseFloat(editTypePrice) : 0 };
-    if (editTypeImageUrl) {
-      updates.image_url = editTypeImageUrl;
-    } else if (editTypeImage) {
+    if (editTypeImageUrl) updates.image_url = editTypeImageUrl;
+    else if (editTypeImage) {
       const url = await uploadTypeImage(editTypeId, editTypeImage);
       if (url) updates.image_url = url;
     }
     await (supabase.from("screen_guard_types" as any) as any).update(updates).eq("id", editTypeId);
-    toast.success("Updated");
-    setShowEditType(false);
-    setEditTypeId(null);
-    fetchTypes(selectedCat);
+    toast.success("Updated"); setShowEditType(false); setEditTypeId(null); fetchTypes(selectedCat);
     setEditSaving(false);
   };
 
@@ -537,7 +605,6 @@ const ScreenGuardsManageTab = () => {
         )}
       </div>
 
-      {/* Types Section */}
       {selectedCat && (
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between mb-3">
@@ -565,7 +632,6 @@ const ScreenGuardsManageTab = () => {
             </div>
           </Modal>
 
-          {/* Edit Type Modal */}
           <Modal open={showEditType} onClose={() => { setShowEditType(false); setEditTypeId(null); }} title="Edit Guard Type">
             <div className="space-y-3">
               <input placeholder="Type name" value={editTypeName} onChange={(e) => setEditTypeName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
@@ -628,8 +694,8 @@ const ModelGuardsTab = () => {
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", "mobile").order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, []);
   useEffect(() => { supabase.from("screen_guard_categories").select("*").order("name").then(({ data }) => { if (data) setCategories(data); }); }, []);
-  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
-  useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
+  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
+  useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data as any); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
 
   const fetchGuards = async (modelId: string) => {
     setLoading(true);
@@ -644,16 +710,8 @@ const ModelGuardsTab = () => {
     if (!selectedModel || !selectedCategory) return;
     setSaving(true);
     const { data: guardTypes } = await supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name");
-    if (!guardTypes || guardTypes.length === 0) {
-      toast.error("No guard types in this category");
-      setSaving(false);
-      return;
-    }
-    const inserts = (guardTypes as GuardType[]).map(t => ({
-      model_id: selectedModel,
-      guard_type: t.name,
-      price: t.price,
-    }));
+    if (!guardTypes || guardTypes.length === 0) { toast.error("No guard types in this category"); setSaving(false); return; }
+    const inserts = (guardTypes as GuardType[]).map(t => ({ model_id: selectedModel, guard_type: t.name, price: t.price }));
     const { error } = await supabase.from("model_screen_guards").insert(inserts);
     if (error) toast.error(error.message); else { toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
@@ -737,16 +795,23 @@ const ModelGuardsTab = () => {
 };
 
 // ─── Repair Categories Tab (for Mobile/Laptop) ─────────────────────────────
-type RepairCategory = { id: string; name: string; service_type: string };
+type RepairCategory = { id: string; name: string; service_type: string; image_url?: string | null };
 
 const RepairCategoriesTab = ({ serviceType }: { serviceType: string }) => {
   const [categories, setCategories] = useState<RepairCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addImageUrl, setAddImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<RepairCategory | null>(null);
   const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const fetchCats = async () => {
     setLoading(true);
@@ -760,15 +825,33 @@ const RepairCategoriesTab = ({ serviceType }: { serviceType: string }) => {
   const handleAdd = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    const { error } = await (supabase.from("repair_categories") as any).insert({ name: name.trim(), service_type: serviceType });
-    if (error) toast.error(error.message); else { toast.success("Category added"); setShowAdd(false); setName(""); fetchCats(); }
+    const insertData: any = { name: name.trim(), service_type: serviceType };
+    if (addImageUrl) insertData.image_url = addImageUrl;
+    const { data, error } = await (supabase.from("repair_categories") as any).insert(insertData).select().single();
+    if (!error && data && addImage) {
+      const url = await uploadServiceImage("service-images", `repair-${data.id}`, addImage);
+      if (url) await (supabase.from("repair_categories") as any).update({ image_url: url }).eq("id", data.id);
+    }
+    if (error) toast.error(error.message); else { toast.success("Category added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchCats(); }
     setSaving(false);
   };
 
-  const handleEdit = async (id: string) => {
-    if (!editName.trim()) return;
-    await (supabase.from("repair_categories" as any) as any).update({ name: editName.trim() }).eq("id", id);
-    setEditId(null); fetchCats(); toast.success("Updated");
+  const openEdit = (c: RepairCategory) => {
+    setEditItem(c); setEditName(c.name); setEditImagePreview(c.image_url || null); setEditImage(null); setEditImageUrl(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editItem || !editName.trim()) return;
+    setEditSaving(true);
+    const updates: any = { name: editName.trim() };
+    if (editImageUrl) updates.image_url = editImageUrl;
+    else if (editImage) {
+      const url = await uploadServiceImage("service-images", `repair-${editItem.id}`, editImage);
+      if (url) updates.image_url = url;
+    }
+    await (supabase.from("repair_categories") as any).update(updates).eq("id", editItem.id);
+    toast.success("Updated"); setEditItem(null); fetchCats();
+    setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -779,35 +862,51 @@ const RepairCategoriesTab = ({ serviceType }: { serviceType: string }) => {
   return (
     <div>
       <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Repair Category</button>
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); }} title="Add Repair Category">
+
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }} title="Add Repair Category">
         <div className="space-y-3">
           <input placeholder="e.g. Screen Replacement" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={addImagePreview || addImageUrl}
+            onFileSelect={(f) => { setAddImage(f); setAddImagePreview(URL.createObjectURL(f)); setAddImageUrl(null); }}
+            onUrlSet={(url) => { setAddImageUrl(url); setAddImagePreview(null); setAddImage(null); }}
+            onClear={() => { setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }}
+            label="Upload category image"
+          />
           <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add Category
           </button>
         </div>
       </Modal>
+
+      <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Repair Category">
+        <div className="space-y-3">
+          <input placeholder="Category name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={editImagePreview || editImageUrl}
+            onFileSelect={(f) => { setEditImage(f); setEditImagePreview(URL.createObjectURL(f)); setEditImageUrl(null); }}
+            onUrlSet={(url) => { setEditImageUrl(url); setEditImagePreview(null); setEditImage(null); }}
+            onClear={() => { setEditImage(null); setEditImagePreview(null); setEditImageUrl(null); }}
+            label="Change image"
+          />
+          <button onClick={handleEdit} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save Changes
+          </button>
+        </div>
+      </Modal>
+
       {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : categories.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Grid3X3 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No categories yet</p></div>
       ) : (
         <div className="space-y-2">
           {categories.map((c) => (
             <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-              <div className="flex-1 min-w-0">
-                {editId === c.id ? (
-                  <div className="flex items-center gap-2">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus onKeyDown={(e) => e.key === "Enter" && handleEdit(c.id)} className="flex-1 text-sm border border-border rounded-lg px-2 py-1 bg-background text-foreground focus:outline-none" />
-                    <button onClick={() => handleEdit(c.id)} className="p-1 text-primary"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditId(null)} className="p-1 text-muted-foreground"><X className="w-4 h-4" /></button>
-                  </div>
-                ) : <span className="text-sm font-semibold text-foreground">{c.name}</span>}
+              {c.image_url ? <img src={c.image_url} alt={c.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Grid3X3 className="w-4 h-4 text-muted-foreground" /></div>}
+              <span className="flex-1 text-sm font-semibold text-foreground truncate">{c.name}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
-              {editId !== c.id && (
-                <div className="flex items-center gap-1">
-                  <button onClick={() => { setEditId(c.id); setEditName(c.name); }} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDelete(c.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -836,8 +935,8 @@ const AssignRepairTab = ({ serviceType }: { serviceType: string }) => {
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", brandServiceType).order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, [brandServiceType]);
   useEffect(() => { (supabase.from("repair_categories") as any).select("*").eq("service_type", serviceType).order("name").then(({ data }: any) => { if (data) setCategories(data); }); }, [serviceType]);
-  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
-  useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
+  useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
+  useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data as any); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
 
   const fetchAssigned = async (modelId: string) => {
     setLoading(true);
@@ -852,9 +951,7 @@ const AssignRepairTab = ({ serviceType }: { serviceType: string }) => {
     if (!selectedModel || !selectedCat || !price) return;
     setSaving(true);
     const { error } = await (supabase.from("model_repair_services") as any).insert({
-      model_id: selectedModel,
-      repair_category_id: selectedCat,
-      price: parseFloat(price),
+      model_id: selectedModel, repair_category_id: selectedCat, price: parseFloat(price),
     });
     if (error) toast.error(error.message); else { toast.success("Repair service assigned"); setShowAdd(false); setSelectedCat(""); setPrice(""); fetchAssigned(selectedModel); }
     setSaving(false);
@@ -994,6 +1091,5 @@ export const LaptopRepairServicesTab = () => {
   );
 };
 
-// ─── Main ServicesTab (backward compat) ─────────────────────────────
 const ServicesTab = () => <ScreenGuardServicesTab />;
 export default ServicesTab;
