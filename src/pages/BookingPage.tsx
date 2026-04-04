@@ -30,6 +30,7 @@ const guardIcons: Record<string, string> = {
 
 const BookingPage = () => {
   const { brandId, seriesId, modelId } = useParams();
+  const { user } = useAuth();
   const [bc, setBc] = useState<Breadcrumb>({ brandName: "...", seriesName: "...", modelName: "..." });
   const [guards, setGuards] = useState<Guard[]>([]);
   const [loading, setLoading] = useState(true);
