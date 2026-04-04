@@ -58,8 +58,9 @@ const BrandGrid = () => {
       });
   }, []);
 
-  const displayedBrands = showAll ? brands : brands.slice(0, visibleCount);
   const hasMore = brands.length > visibleCount;
+  // Show visibleCount - 1 brands + Show More button replaces last slot
+  const displayedBrands = showAll ? brands : brands.slice(0, hasMore ? visibleCount - 1 : visibleCount);
 
   return (
     <section className="py-10 md:py-16 bg-background">
