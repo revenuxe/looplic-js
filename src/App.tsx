@@ -12,6 +12,8 @@ import SeriesPage from "./pages/SeriesPage.tsx";
 import ModelsPage from "./pages/ModelsPage.tsx";
 import BookingPage from "./pages/BookingPage.tsx";
 import ServiceLanding from "./pages/ServiceLanding.tsx";
+import AuthPage from "./pages/AuthPage.tsx";
+import AccountPage from "./pages/AccountPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/brands" element={<BrandsPage />} />
           <Route path="/brands/:brandId" element={<SeriesPage />} />
           <Route path="/brands/:brandId/:seriesId" element={<ModelsPage />} />

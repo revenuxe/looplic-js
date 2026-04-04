@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -29,6 +30,7 @@ const guardIcons: Record<string, string> = {
 
 const BookingPage = () => {
   const { brandId, seriesId, modelId } = useParams();
+  const { user } = useAuth();
   const [bc, setBc] = useState<Breadcrumb>({ brandName: "...", seriesName: "...", modelName: "..." });
   const [guards, setGuards] = useState<Guard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,14 +73,16 @@ const BookingPage = () => {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.from("bookings").insert({
+    const insertData: any = {
       customer_name: name.trim(),
       customer_phone: phone.trim(),
       model_id: modelId!,
       guard_type: selectedGuard.guard_type,
       location: location.trim() || null,
       pincode: pincode.trim() || null,
-    });
+    };
+    if (user) insertData.user_id = user.id;
+    const { error } = await supabase.from("bookings").insert(insertData);
 
     if (error) {
       toast.error("Booking failed. Please try again.");

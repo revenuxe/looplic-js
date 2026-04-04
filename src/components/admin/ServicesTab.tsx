@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree
 } from "lucide-react";
 import ImageUpload from "./ImageUpload";
 
@@ -1037,6 +1037,151 @@ const AssignRepairTab = ({ serviceType }: { serviceType: string }) => {
   );
 };
 
+// ─── Repair Subcategories Tab ─────────────────────────────
+type RepairSubcategory = { id: string; category_id: string; name: string; image_url: string | null; price: number };
+
+const RepairSubcategoriesTab = ({ serviceType }: { serviceType: string }) => {
+  const [categories, setCategories] = useState<RepairCategory[]>([]);
+  const [selectedCat, setSelectedCat] = useState("");
+  const [subs, setSubs] = useState<RepairSubcategory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addImageUrl, setAddImageUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editItem, setEditItem] = useState<RepairSubcategory | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  useEffect(() => {
+    (supabase.from("repair_categories") as any).select("*").eq("service_type", serviceType).order("name").then(({ data }: any) => { if (data) setCategories(data); });
+  }, [serviceType]);
+
+  const fetchSubs = async (catId: string) => {
+    setLoading(true);
+    const { data } = await (supabase.from("repair_subcategories") as any).select("*").eq("category_id", catId).order("name");
+    if (data) setSubs(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (selectedCat) fetchSubs(selectedCat); else setSubs([]); }, [selectedCat]);
+
+  const handleAdd = async () => {
+    if (!name.trim() || !selectedCat) return;
+    setSaving(true);
+    const insertData: any = { name: name.trim(), category_id: selectedCat, price: parseFloat(price) || 0 };
+    if (addImageUrl) insertData.image_url = addImageUrl;
+    const { data, error } = await (supabase.from("repair_subcategories") as any).insert(insertData).select().single();
+    if (!error && data && addImage) {
+      const url = await uploadServiceImage("service-images", `subsvc-${data.id}`, addImage);
+      if (url) await (supabase.from("repair_subcategories") as any).update({ image_url: url }).eq("id", data.id);
+    }
+    if (error) toast.error(error.message); else { toast.success("Subcategory added"); setShowAdd(false); setName(""); setPrice(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchSubs(selectedCat); }
+    setSaving(false);
+  };
+
+  const openEdit = (s: RepairSubcategory) => {
+    setEditItem(s); setEditName(s.name); setEditPrice(String(s.price)); setEditImagePreview(s.image_url); setEditImage(null); setEditImageUrl(null);
+  };
+
+  const handleEdit = async () => {
+    if (!editItem || !editName.trim()) return;
+    setEditSaving(true);
+    const updates: any = { name: editName.trim(), price: parseFloat(editPrice) || 0 };
+    if (editImageUrl) updates.image_url = editImageUrl;
+    else if (editImage) {
+      const url = await uploadServiceImage("service-images", `subsvc-${editItem.id}`, editImage);
+      if (url) updates.image_url = url;
+    }
+    await (supabase.from("repair_subcategories") as any).update(updates).eq("id", editItem.id);
+    toast.success("Updated"); setEditItem(null); fetchSubs(selectedCat);
+    setEditSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await (supabase.from("repair_subcategories") as any).delete().eq("id", id);
+    fetchSubs(selectedCat); toast.success("Deleted");
+  };
+
+  return (
+    <div>
+      <div className="mb-4">
+        <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Select Category</label>
+        <div className="relative">
+          <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+            <option value="">Choose category...</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {selectedCat && <button onClick={() => setShowAdd(true)} className="mb-4 flex items-center gap-1.5 text-xs font-bold text-primary"><Plus className="w-3.5 h-3.5" /> Add Subcategory</button>}
+
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setName(""); setPrice(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }} title="Add Subcategory">
+        <div className="space-y-3">
+          <input placeholder="e.g. Original Screen" value={name} onChange={(e) => setName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <input type="number" placeholder="Price (₹)" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={addImagePreview || addImageUrl}
+            onFileSelect={(f) => { setAddImage(f); setAddImagePreview(URL.createObjectURL(f)); setAddImageUrl(null); }}
+            onUrlSet={(url) => { setAddImageUrl(url); setAddImagePreview(null); setAddImage(null); }}
+            onClear={() => { setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); }}
+            label="Upload image"
+          />
+          <button onClick={handleAdd} disabled={saving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={!!editItem} onClose={() => setEditItem(null)} title="Edit Subcategory">
+        <div className="space-y-3">
+          <input placeholder="Name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <input type="number" placeholder="Price (₹)" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          <ImageUpload
+            preview={editImagePreview || editImageUrl}
+            onFileSelect={(f) => { setEditImage(f); setEditImagePreview(URL.createObjectURL(f)); setEditImageUrl(null); }}
+            onUrlSet={(url) => { setEditImageUrl(url); setEditImagePreview(null); setEditImage(null); }}
+            onClear={() => { setEditImage(null); setEditImagePreview(null); setEditImageUrl(null); }}
+            label="Change image"
+          />
+          <button onClick={handleEdit} disabled={editSaving} className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5">
+            {editSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save
+          </button>
+        </div>
+      </Modal>
+
+      {!selectedCat ? <p className="text-xs text-muted-foreground text-center py-8">Select a category first</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : subs.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground"><ListTree className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No subcategories yet</p></div>
+      ) : (
+        <div className="space-y-2">
+          {subs.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              {s.image_url ? <img src={s.image_url} alt={s.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><ListTree className="w-4 h-4 text-muted-foreground" /></div>}
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-foreground truncate block">{s.name}</span>
+                <span className="text-xs font-bold text-primary">₹{s.price}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(s.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Screen Guard Services Tab ─────────────────────────────
 export const ScreenGuardServicesTab = () => {
   return (
@@ -1061,11 +1206,13 @@ export const ScreenGuardServicesTab = () => {
 export const MobileRepairServicesTab = () => {
   return (
     <Tabs defaultValue="repairs" className="mt-4">
-      <TabsList className="w-full grid grid-cols-2 h-9">
-        <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Repair Types</TabsTrigger>
+      <TabsList className="w-full grid grid-cols-3 h-9">
+        <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Categories</TabsTrigger>
+        <TabsTrigger value="subcategories" className="text-[10px] gap-1"><ListTree className="w-3 h-3" />Subcategories</TabsTrigger>
         <TabsTrigger value="assign" className="text-[10px] gap-1"><Shield className="w-3 h-3" />Assign</TabsTrigger>
       </TabsList>
       <TabsContent value="repairs"><RepairCategoriesTab serviceType="mobile" /></TabsContent>
+      <TabsContent value="subcategories"><RepairSubcategoriesTab serviceType="mobile" /></TabsContent>
       <TabsContent value="assign"><AssignRepairTab serviceType="mobile" /></TabsContent>
     </Tabs>
   );
@@ -1075,17 +1222,19 @@ export const MobileRepairServicesTab = () => {
 export const LaptopRepairServicesTab = () => {
   return (
     <Tabs defaultValue="brands" className="mt-4">
-      <TabsList className="w-full grid grid-cols-5 h-9">
+      <TabsList className="w-full grid grid-cols-6 h-9">
         <TabsTrigger value="brands" className="text-[10px] gap-1"><Tag className="w-3 h-3" />Brands</TabsTrigger>
         <TabsTrigger value="series" className="text-[10px] gap-1"><Layers className="w-3 h-3" />Series</TabsTrigger>
         <TabsTrigger value="models" className="text-[10px] gap-1"><Smartphone className="w-3 h-3" />Models</TabsTrigger>
-        <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Repair Types</TabsTrigger>
+        <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Categories</TabsTrigger>
+        <TabsTrigger value="subcategories" className="text-[10px] gap-1"><ListTree className="w-3 h-3" />Sub</TabsTrigger>
         <TabsTrigger value="assign" className="text-[10px] gap-1"><Shield className="w-3 h-3" />Assign</TabsTrigger>
       </TabsList>
       <TabsContent value="brands"><BrandsTab serviceType="laptop" /></TabsContent>
       <TabsContent value="series"><SeriesTab serviceType="laptop" /></TabsContent>
       <TabsContent value="models"><ModelsTab serviceType="laptop" /></TabsContent>
       <TabsContent value="repairs"><RepairCategoriesTab serviceType="laptop" /></TabsContent>
+      <TabsContent value="subcategories"><RepairSubcategoriesTab serviceType="laptop" /></TabsContent>
       <TabsContent value="assign"><AssignRepairTab serviceType="laptop" /></TabsContent>
     </Tabs>
   );
