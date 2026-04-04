@@ -49,6 +49,7 @@ const BrandGrid = () => {
     supabase
       .from("brands")
       .select("id, name, letter, gradient, image_url")
+      .eq("service_type", "mobile")
       .order("sort_order")
       .order("name")
       .then(({ data }) => {
