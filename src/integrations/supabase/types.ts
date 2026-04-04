@@ -26,8 +26,10 @@ export type Database = {
           notes: string | null
           pincode: string | null
           repair_category_id: string | null
+          repair_subcategory_id: string | null
           service_type: string
           status: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -40,8 +42,10 @@ export type Database = {
           notes?: string | null
           pincode?: string | null
           repair_category_id?: string | null
+          repair_subcategory_id?: string | null
           service_type?: string
           status?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -54,8 +58,10 @@ export type Database = {
           notes?: string | null
           pincode?: string | null
           repair_category_id?: string | null
+          repair_subcategory_id?: string | null
           service_type?: string
           status?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -70,6 +76,13 @@ export type Database = {
             columns: ["repair_category_id"]
             isOneToOne: false
             referencedRelation: "repair_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_repair_subcategory_id_fkey"
+            columns: ["repair_subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "repair_subcategories"
             referencedColumns: ["id"]
           },
         ]
@@ -233,6 +246,41 @@ export type Database = {
           service_type?: string
         }
         Relationships: []
+      }
+      repair_subcategories: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repair_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "repair_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       screen_guard_categories: {
         Row: {
