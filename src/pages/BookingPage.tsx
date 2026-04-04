@@ -73,14 +73,16 @@ const BookingPage = () => {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.from("bookings").insert({
+    const insertData: any = {
       customer_name: name.trim(),
       customer_phone: phone.trim(),
       model_id: modelId!,
       guard_type: selectedGuard.guard_type,
       location: location.trim() || null,
       pincode: pincode.trim() || null,
-    });
+    };
+    if (user) insertData.user_id = user.id;
+    const { error } = await supabase.from("bookings").insert(insertData);
 
     if (error) {
       toast.error("Booking failed. Please try again.");
