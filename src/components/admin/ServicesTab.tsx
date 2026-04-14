@@ -1206,14 +1206,12 @@ export const ScreenGuardServicesTab = () => {
 export const MobileRepairServicesTab = () => {
   return (
     <Tabs defaultValue="repairs" className="mt-4">
-      <TabsList className="w-full grid grid-cols-3 h-9">
+      <TabsList className="w-full grid grid-cols-2 h-9">
         <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Categories</TabsTrigger>
         <TabsTrigger value="subcategories" className="text-[10px] gap-1"><ListTree className="w-3 h-3" />Subcategories</TabsTrigger>
-        <TabsTrigger value="assign" className="text-[10px] gap-1"><Shield className="w-3 h-3" />Assign</TabsTrigger>
       </TabsList>
       <TabsContent value="repairs"><RepairCategoriesTab serviceType="mobile" /></TabsContent>
       <TabsContent value="subcategories"><RepairSubcategoriesTab serviceType="mobile" /></TabsContent>
-      <TabsContent value="assign"><AssignRepairTab serviceType="mobile" /></TabsContent>
     </Tabs>
   );
 };
@@ -1221,21 +1219,13 @@ export const MobileRepairServicesTab = () => {
 // ─── Laptop Repair Services Tab ─────────────────────────────
 export const LaptopRepairServicesTab = () => {
   return (
-    <Tabs defaultValue="brands" className="mt-4">
-      <TabsList className="w-full grid grid-cols-6 h-9">
-        <TabsTrigger value="brands" className="text-[10px] gap-1"><Tag className="w-3 h-3" />Brands</TabsTrigger>
-        <TabsTrigger value="series" className="text-[10px] gap-1"><Layers className="w-3 h-3" />Series</TabsTrigger>
-        <TabsTrigger value="models" className="text-[10px] gap-1"><Smartphone className="w-3 h-3" />Models</TabsTrigger>
+    <Tabs defaultValue="repairs" className="mt-4">
+      <TabsList className="w-full grid grid-cols-2 h-9">
         <TabsTrigger value="repairs" className="text-[10px] gap-1"><Grid3X3 className="w-3 h-3" />Categories</TabsTrigger>
-        <TabsTrigger value="subcategories" className="text-[10px] gap-1"><ListTree className="w-3 h-3" />Sub</TabsTrigger>
-        <TabsTrigger value="assign" className="text-[10px] gap-1"><Shield className="w-3 h-3" />Assign</TabsTrigger>
+        <TabsTrigger value="subcategories" className="text-[10px] gap-1"><ListTree className="w-3 h-3" />Subcategories</TabsTrigger>
       </TabsList>
-      <TabsContent value="brands"><BrandsTab serviceType="laptop" /></TabsContent>
-      <TabsContent value="series"><SeriesTab serviceType="laptop" /></TabsContent>
-      <TabsContent value="models"><ModelsTab serviceType="laptop" /></TabsContent>
       <TabsContent value="repairs"><RepairCategoriesTab serviceType="laptop" /></TabsContent>
       <TabsContent value="subcategories"><RepairSubcategoriesTab serviceType="laptop" /></TabsContent>
-      <TabsContent value="assign"><AssignRepairTab serviceType="laptop" /></TabsContent>
     </Tabs>
   );
 };
