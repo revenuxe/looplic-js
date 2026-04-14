@@ -122,9 +122,6 @@ const ServiceLanding = () => {
 
         <div className="container relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-lg mx-auto text-center">
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.color} flex items-center justify-center text-white mx-auto mb-4`}>
-              {config.icon}
-            </div>
             <h1 className="text-[26px] leading-[1.15] font-extrabold tracking-tight md:text-5xl text-foreground px-4">
               {config.title}{" "}
               <span className="gradient-brand-text block mt-1">{config.subtitle.split(" ").slice(-4).join(" ")}</span>

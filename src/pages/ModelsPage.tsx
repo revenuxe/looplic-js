@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Loader2, ChevronRight, Smartphone, ArrowRight } from "lucide-react";
 
-type Model = { id: string; name: string };
+type Model = { id: string; name: string; image_url: string | null };
 type Breadcrumb = { brandName: string; seriesName: string; brandImage: string | null; brandGradient: string; brandLetter: string };
 
 const ModelsPage = () => {
@@ -22,7 +22,7 @@ const ModelsPage = () => {
     Promise.all([
       supabase.from("brands").select("name, image_url, gradient, letter").eq("id", brandId).single(),
       supabase.from("series").select("name").eq("id", seriesId).single(),
-      supabase.from("models").select("id, name").eq("series_id", seriesId).order("name"),
+      supabase.from("models").select("id, name, image_url").eq("series_id", seriesId).order("name"),
     ]).then(([brandRes, seriesRes, modelsRes]) => {
       const bName = brandRes.data?.name || "...";
       const sName = seriesRes.data?.name || "...";
@@ -74,7 +74,7 @@ const ModelsPage = () => {
               <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">
                 {bc.brandName} {bc.seriesName} Models
               </h1>
-              <p className="text-xs text-muted-foreground mt-1">Select your phone model for screen guard or repair</p>
+              <p className="text-xs text-muted-foreground mt-1">Select your model for screen guard or repair</p>
             </div>
           </div>
 
@@ -96,13 +96,19 @@ const ModelsPage = () => {
                 >
                   <Link
                     to={getModelLink(m.id)}
-                    className="flex items-center justify-between gap-2 py-4 px-4 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-95 transition-all group"
+                    className="flex flex-col items-center gap-2 py-4 px-3 rounded-2xl bg-card border border-border shadow-card-brand hover:shadow-elevated-brand hover:border-primary/30 active:scale-95 transition-all group"
                   >
-                    <div className="flex items-center gap-3">
-                      <Smartphone className="w-6 h-6 text-primary flex-shrink-0" />
-                      <span className="text-xs font-bold text-foreground">{m.name}</span>
+                    {m.image_url ? (
+                      <img src={m.image_url} alt={m.name} className="w-16 h-16 rounded-xl object-contain" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center">
+                        <Smartphone className="w-7 h-7 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 w-full">
+                      <span className="flex-1 text-xs font-bold text-foreground text-center truncate">{m.name}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
                   </Link>
                 </motion.div>
               ))}
