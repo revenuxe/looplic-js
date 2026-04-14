@@ -50,23 +50,14 @@ const BookingPage = () => {
 
   useEffect(() => {
     if (!brandId || !seriesId || !modelId) return;
-    const promises: Promise<any>[] = [
-      supabase.from("brands").select("name").eq("id", brandId).single(),
-      supabase.from("series").select("name").eq("id", seriesId).single(),
-      supabase.from("models").select("name").eq("id", modelId).single(),
-    ];
+    const p1 = supabase.from("brands").select("name").eq("id", brandId).single() as any;
+    const p2 = supabase.from("series").select("name").eq("id", seriesId).single() as any;
+    const p3 = supabase.from("models").select("name").eq("id", modelId).single() as any;
+    const p4 = isRepair
+      ? (supabase.from("repair_categories") as any).select("*").eq("service_type", repairServiceType).order("name")
+      : supabase.from("model_screen_guards").select("id, guard_type, price").eq("model_id", modelId).order("guard_type") as any;
 
-    if (isRepair) {
-      promises.push(
-        (supabase.from("repair_categories") as any).select("*").eq("service_type", repairServiceType).order("name")
-      );
-    } else {
-      promises.push(
-        supabase.from("model_screen_guards").select("id, guard_type, price").eq("model_id", modelId).order("guard_type")
-      );
-    }
-
-    Promise.all(promises).then(([brandRes, seriesRes, modelRes, dataRes]) => {
+    Promise.all([p1, p2, p3, p4]).then(([brandRes, seriesRes, modelRes, dataRes]: any[]) => {
       setBc({
         brandName: brandRes.data?.name || "...",
         seriesName: seriesRes.data?.name || "...",
