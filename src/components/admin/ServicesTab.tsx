@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@/src/lib/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree
 } from "lucide-react";
 import ImageUpload from "./ImageUpload";
+
+const supabase = createClient() as any;
 
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
 type Series = { id: string; brand_id: string; name: string; image_url?: string | null };

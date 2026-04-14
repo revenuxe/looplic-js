@@ -1,0 +1,93 @@
+import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
+import Link from "next/link";
+
+import type { CatalogBrand, CatalogModel, CatalogSeries } from "@/src/lib/data/catalog";
+
+type ModelsCatalogPageProps = {
+  brand: CatalogBrand;
+  series: CatalogSeries;
+  models: CatalogModel[];
+  brandsPath: string;
+  seriesPath: string;
+  modelPathPrefix: string;
+  serviceLabel: string;
+};
+
+export function ModelsCatalogPage({
+  brand,
+  series,
+  models,
+  brandsPath,
+  seriesPath,
+  modelPathPrefix,
+  serviceLabel,
+}: ModelsCatalogPageProps) {
+  const DeviceIcon = brand.service_type === "laptop" ? Laptop : Smartphone;
+
+  return (
+    <main className="flex-1">
+      <div className="container py-6">
+        <div className="mb-5 flex flex-wrap items-center gap-1 text-xs font-semibold text-muted-foreground">
+          <Link href="/" className="transition-colors hover:text-foreground">
+            Home
+          </Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link href={brandsPath} className="transition-colors hover:text-foreground">
+            Brands
+          </Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link href={seriesPath} className="transition-colors hover:text-foreground">
+            {brand.name}
+          </Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{series.name}</span>
+        </div>
+
+        <div className="mb-6 flex items-center gap-4">
+          {brand.image_url ? (
+            <img src={brand.image_url} alt={brand.name} className="h-14 w-14 rounded-2xl border border-border object-contain" />
+          ) : (
+            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${brand.gradient}`}>
+              <span className="text-lg font-extrabold text-primary-foreground">{brand.letter}</span>
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-extrabold text-foreground md:text-3xl">
+              {brand.name} {series.name} Models
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground">Select your model for screen guard or {serviceLabel.toLowerCase()}</p>
+          </div>
+        </div>
+
+        {models.length === 0 ? (
+          <div className="py-16 text-center">
+            <DeviceIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+            <p className="text-sm font-semibold text-muted-foreground">No models available</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {models.map((model) => (
+              <Link
+                key={model.id}
+                href={`${modelPathPrefix}/${model.slug}`}
+                className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card px-3 py-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
+              >
+                {model.image_url ? (
+                  <img src={model.image_url} alt={model.name} className="h-16 w-16 rounded-xl object-contain" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-secondary">
+                    <DeviceIcon className="h-7 w-7 text-primary" />
+                  </div>
+                )}
+                <div className="flex w-full items-center gap-1.5">
+                  <span className="flex-1 truncate text-center text-xs font-bold text-foreground">{model.name}</span>
+                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}

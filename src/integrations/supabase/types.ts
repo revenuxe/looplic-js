@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          booking_code: string | null
           created_at: string
           customer_name: string
           customer_phone: string
@@ -27,11 +28,14 @@ export type Database = {
           pincode: string | null
           repair_category_id: string | null
           repair_subcategory_id: string | null
+          scheduled_date: string | null
           service_type: string
           status: string
+          time_slot: string | null
           user_id: string | null
         }
         Insert: {
+          booking_code?: string | null
           created_at?: string
           customer_name: string
           customer_phone: string
@@ -43,11 +47,14 @@ export type Database = {
           pincode?: string | null
           repair_category_id?: string | null
           repair_subcategory_id?: string | null
+          scheduled_date?: string | null
           service_type?: string
           status?: string
+          time_slot?: string | null
           user_id?: string | null
         }
         Update: {
+          booking_code?: string | null
           created_at?: string
           customer_name?: string
           customer_phone?: string
@@ -59,8 +66,10 @@ export type Database = {
           pincode?: string | null
           repair_category_id?: string | null
           repair_subcategory_id?: string | null
+          scheduled_date?: string | null
           service_type?: string
           status?: string
+          time_slot?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -87,6 +96,39 @@ export type Database = {
           },
         ]
       }
+      customer_profiles: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          full_name: string | null
+          phone: string | null
+          pincode: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          phone?: string | null
+          pincode?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          phone?: string | null
+          pincode?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           created_at: string
@@ -96,6 +138,7 @@ export type Database = {
           letter: string
           name: string
           service_type: string
+          slug: string
           sort_order: number
         }
         Insert: {
@@ -106,6 +149,7 @@ export type Database = {
           letter?: string
           name: string
           service_type?: string
+          slug?: string
           sort_order?: number
         }
         Update: {
@@ -116,6 +160,7 @@ export type Database = {
           letter?: string
           name?: string
           service_type?: string
+          slug?: string
           sort_order?: number
         }
         Relationships: []
@@ -198,6 +243,7 @@ export type Database = {
           image_url: string | null
           name: string
           series_id: string
+          slug: string
         }
         Insert: {
           created_at?: string
@@ -205,6 +251,7 @@ export type Database = {
           image_url?: string | null
           name: string
           series_id: string
+          slug?: string
         }
         Update: {
           created_at?: string
@@ -212,6 +259,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           series_id?: string
+          slug?: string
         }
         Relationships: [
           {
@@ -342,6 +390,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          slug: string
         }
         Insert: {
           brand_id: string
@@ -349,6 +398,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          slug?: string
         }
         Update: {
           brand_id?: string
@@ -356,6 +406,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          slug?: string
         }
         Relationships: [
           {

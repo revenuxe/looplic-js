@@ -1,0 +1,74 @@
+import { cache } from "react";
+
+import { createClient } from "@/src/lib/supabase/server";
+
+export type HomeBrand = {
+  id: string;
+  slug: string;
+  name: string;
+  letter: string;
+  gradient: string;
+  image_url: string | null;
+};
+
+const fallbackBrands: HomeBrand[] = [
+  { id: "apple", slug: "apple", name: "Apple", letter: "A", gradient: "from-gray-700 to-gray-900", image_url: null },
+  { id: "samsung", slug: "samsung", name: "Samsung", letter: "S", gradient: "from-blue-500 to-blue-700", image_url: null },
+  { id: "google", slug: "google", name: "Google", letter: "G", gradient: "from-red-400 to-yellow-400", image_url: null },
+  { id: "oneplus", slug: "oneplus", name: "OnePlus", letter: "1+", gradient: "from-red-500 to-red-700", image_url: null },
+  { id: "xiaomi", slug: "xiaomi", name: "Xiaomi", letter: "Mi", gradient: "from-orange-400 to-orange-600", image_url: null },
+  { id: "vivo", slug: "vivo", name: "V", letter: "V", gradient: "from-blue-400 to-indigo-500", image_url: null },
+  { id: "oppo", slug: "oppo", name: "Oppo", letter: "O", gradient: "from-green-400 to-green-600", image_url: null },
+  { id: "realme", slug: "realme", name: "Realme", letter: "R", gradient: "from-yellow-400 to-yellow-600", image_url: null },
+  { id: "nothing", slug: "nothing", name: "Nothing", letter: "N", gradient: "from-gray-400 to-gray-600", image_url: null },
+];
+
+export const getHomepageBrands = cache(async (): Promise<HomeBrand[]> => {
+  try {
+    const supabase = await createClient();
+    const withSlug = await supabase
+      .from("brands")
+      .select("id, slug, name, letter, gradient, image_url")
+      .eq("service_type", "mobile")
+      .order("sort_order")
+      .order("name");
+
+    if (!withSlug.error && withSlug.data && withSlug.data.length > 0) {
+      return (withSlug.data as Array<{
+        id: string;
+        slug: string | null;
+        name: string;
+        letter: string;
+        gradient: string;
+        image_url: string | null;
+      }>).map((brand) => ({
+        ...brand,
+        slug: brand.slug || brand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || brand.id,
+      }));
+    }
+
+    const withoutSlug = await supabase
+      .from("brands")
+      .select("id, name, letter, gradient, image_url")
+      .eq("service_type", "mobile")
+      .order("sort_order")
+      .order("name");
+
+    if (!withoutSlug.error && withoutSlug.data && withoutSlug.data.length > 0) {
+      return (withoutSlug.data as Array<{
+        id: string;
+        name: string;
+        letter: string;
+        gradient: string;
+        image_url: string | null;
+      }>).map((brand) => ({
+        ...brand,
+        slug: brand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || brand.id,
+      }));
+    }
+
+    return fallbackBrands;
+  } catch {
+    return fallbackBrands;
+  }
+});
