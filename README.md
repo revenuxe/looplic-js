@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Looplic
 
-TODO: Document your project here
+Next.js app for Looplic's doorstep screen guard installation and repair booking flow.
