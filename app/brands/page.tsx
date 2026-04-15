@@ -6,6 +6,8 @@ import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "All Mobile Brands",
   description: "Browse all supported phone brands for screen guard installation with dedicated SEO-ready routes.",

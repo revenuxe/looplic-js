@@ -3,7 +3,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/integrations/supabase/types";
 import { supabaseAnonKey, supabaseUrl } from "@/src/lib/supabase/config";
 
-let browserClient: ReturnType<typeof createBrowserClient<Database>> | null = null;
+let browserClient: any = null;
 
 export function createClient() {
   if (browserClient) {

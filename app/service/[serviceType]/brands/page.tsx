@@ -7,6 +7,8 @@ import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     serviceType: string;

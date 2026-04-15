@@ -10,6 +10,8 @@ import {
   getSeriesBySlug,
 } from "@/src/lib/data/catalog";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     serviceType: string;

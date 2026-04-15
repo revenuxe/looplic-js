@@ -9,6 +9,8 @@ import { ServiceLandingPage } from "@/src/components/next/ServiceLandingPage";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     serviceType: string;
