@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthPageClient } from "@/src/components/next/AuthPageClient";
 import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
@@ -13,7 +14,15 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CatalogNavbar />
-      <AuthPageClient />
+      <Suspense
+        fallback={
+          <main className="flex flex-1 items-center justify-center p-4">
+            <div className="text-sm text-muted-foreground">Loading account access...</div>
+          </main>
+        }
+      >
+        <AuthPageClient />
+      </Suspense>
       <HomepageFooter />
     </div>
   );
