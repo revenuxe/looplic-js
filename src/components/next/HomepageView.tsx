@@ -1,5 +1,3 @@
-"use client";
-
 import { HowItWorks } from "@/src/components/next/HowItWorks";
 import { HomepageBrandGrid } from "@/src/components/next/HomepageBrandGrid";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";

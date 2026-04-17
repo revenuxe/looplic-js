@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, ChevronRight, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -75,7 +76,13 @@ export function HomepageHeroSection({ brands }: { brands: HomeBrand[] }) {
                 className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
               >
                 {brand.image_url ? (
-                  <img src={brand.image_url} alt={brand.name} className="h-10 w-10 rounded-xl object-contain" />
+                  <Image
+                    src={brand.image_url}
+                    alt={brand.name}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-xl object-contain"
+                  />
                 ) : (
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${brand.gradient}`}>
                     <span className="text-xs font-extrabold text-primary-foreground">{brand.letter}</span>

@@ -1,6 +1,7 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
-import { createClient } from "@/src/lib/supabase/server";
+import { slugify } from "@/src/lib/slug";
+import { createPublicClient } from "@/src/lib/supabase/public";
 
 export type HomeBrand = {
   id: string;
@@ -23,9 +24,9 @@ const fallbackBrands: HomeBrand[] = [
   { id: "nothing", slug: "nothing", name: "Nothing", letter: "N", gradient: "from-gray-400 to-gray-600", image_url: null },
 ];
 
-export const getHomepageBrands = cache(async (): Promise<HomeBrand[]> => {
+export const getHomepageBrands = unstable_cache(async (): Promise<HomeBrand[]> => {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const withSlug = await supabase
       .from("brands")
       .select("id, slug, name, letter, gradient, image_url")
@@ -43,7 +44,7 @@ export const getHomepageBrands = cache(async (): Promise<HomeBrand[]> => {
         image_url: string | null;
       }>).map((brand) => ({
         ...brand,
-        slug: brand.slug || brand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || brand.id,
+        slug: brand.slug || slugify(brand.name) || brand.id,
       }));
     }
 
@@ -63,7 +64,7 @@ export const getHomepageBrands = cache(async (): Promise<HomeBrand[]> => {
         image_url: string | null;
       }>).map((brand) => ({
         ...brand,
-        slug: brand.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || brand.id,
+        slug: slugify(brand.name) || brand.id,
       }));
     }
 
@@ -71,4 +72,7 @@ export const getHomepageBrands = cache(async (): Promise<HomeBrand[]> => {
   } catch {
     return fallbackBrands;
   }
+}, ["homepage-brands"], {
+  revalidate: 300,
+  tags: ["catalog", "catalog-brands", "homepage-brands"],
 });

@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import type { CatalogBrand, CatalogModel, CatalogSeries } from "@/src/lib/data/catalog";
@@ -45,7 +46,13 @@ export function ModelsCatalogPage({
 
         <div className="mb-6 flex items-center gap-4">
           {brand.image_url ? (
-            <img src={brand.image_url} alt={brand.name} className="h-14 w-14 rounded-2xl border border-border object-contain" />
+            <Image
+              src={brand.image_url}
+              alt={brand.name}
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-2xl border border-border object-contain"
+            />
           ) : (
             <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${brand.gradient}`}>
               <span className="text-lg font-extrabold text-primary-foreground">{brand.letter}</span>
@@ -73,7 +80,13 @@ export function ModelsCatalogPage({
                 className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card px-3 py-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
               >
                 {model.image_url ? (
-                  <img src={model.image_url} alt={model.name} className="h-16 w-16 rounded-xl object-contain" />
+                  <Image
+                    src={model.image_url}
+                    alt={model.name}
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-xl object-contain"
+                  />
                 ) : (
                   <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-secondary">
                     <DeviceIcon className="h-7 w-7 text-primary" />

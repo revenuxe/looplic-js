@@ -7,7 +7,7 @@ import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{
@@ -27,6 +27,10 @@ const serviceMap = {
     activeTab: "laptop-repair" as const,
   },
 };
+
+export function generateStaticParams() {
+  return Object.keys(serviceMap).map((serviceType) => ({ serviceType }));
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { serviceType } = await params;

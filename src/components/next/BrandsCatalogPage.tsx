@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -75,7 +76,13 @@ export function BrandsCatalogPage({
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card px-2 py-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
               >
                 {brand.image_url ? (
-                  <img src={brand.image_url} alt={`${brand.name} screen guard`} className="h-12 w-12 rounded-xl object-contain" />
+                  <Image
+                    src={brand.image_url}
+                    alt={`${brand.name} screen guard`}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-xl object-contain"
+                  />
                 ) : (
                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${brand.gradient} shadow-sm`}>
                     <span className="text-sm font-extrabold text-primary-foreground">{brand.letter}</span>

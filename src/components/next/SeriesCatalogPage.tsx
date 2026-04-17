@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import type { CatalogBrand, CatalogSeries } from "@/src/lib/data/catalog";
@@ -38,7 +39,13 @@ export function SeriesCatalogPage({
 
         <div className="mb-6 flex items-center gap-4">
           {brand.image_url ? (
-            <img src={brand.image_url} alt={`${brand.name} logo`} className="h-16 w-16 rounded-2xl border border-border object-contain shadow-card-brand" />
+            <Image
+              src={brand.image_url}
+              alt={`${brand.name} logo`}
+              width={64}
+              height={64}
+              className="h-16 w-16 rounded-2xl border border-border object-contain shadow-card-brand"
+            />
           ) : (
             <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${brand.gradient} shadow-sm`}>
               <span className="text-xl font-extrabold text-primary-foreground">{brand.letter}</span>

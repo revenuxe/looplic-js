@@ -1,7 +1,7 @@
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
-import { createClient } from "@/src/lib/supabase/server";
 import { slugify } from "@/src/lib/slug";
+import { createPublicClient } from "@/src/lib/supabase/public";
 
 export type CatalogBrand = {
   id: string;
@@ -61,8 +61,10 @@ const fallbackBrands: CatalogBrand[] = [
   { id: "lenovo", name: "Lenovo", slug: "lenovo", letter: "L", gradient: "from-red-500 to-rose-600", image_url: null, service_type: "laptop" },
 ];
 
+const CATALOG_REVALIDATE_SECONDS = 300;
+
 async function queryBrands(serviceType: "mobile" | "laptop") {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const withSlug = await supabase
     .from("brands")
     .select("id, name, slug, letter, gradient, image_url, service_type")
@@ -94,15 +96,18 @@ async function queryBrands(serviceType: "mobile" | "laptop") {
   return fallbackBrands.filter((brand) => brand.service_type === serviceType);
 }
 
-export const getBrandsForListing = cache(async (serviceType: "mobile" | "laptop" = "mobile"): Promise<CatalogBrand[]> => {
+export const getBrandsForListing = unstable_cache(async (serviceType: "mobile" | "laptop" = "mobile"): Promise<CatalogBrand[]> => {
   try {
     return await queryBrands(serviceType);
   } catch {
     return fallbackBrands.filter((brand) => brand.service_type === serviceType);
   }
+}, ["catalog-brands"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-brands"],
 });
 
-export const getBrandBySlug = cache(
+export const getBrandBySlug = unstable_cache(
   async (brandSlug: string, serviceType?: "mobile" | "laptop"): Promise<CatalogBrand | null> => {
     try {
       const list = await getBrandsForListing(serviceType ?? "mobile");
@@ -118,11 +123,16 @@ export const getBrandBySlug = cache(
       return null;
     }
   },
+  ["catalog-brand-by-slug"],
+  {
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+    tags: ["catalog", "catalog-brands"],
+  },
 );
 
-export const getSeriesForBrand = cache(async (brandId: string): Promise<CatalogSeries[]> => {
+export const getSeriesForBrand = unstable_cache(async (brandId: string): Promise<CatalogSeries[]> => {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const withSlug = await supabase
       .from("series")
       .select("id, brand_id, name, slug, image_url")
@@ -153,9 +163,12 @@ export const getSeriesForBrand = cache(async (brandId: string): Promise<CatalogS
   } catch {
     return [];
   }
+}, ["catalog-series"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-series"],
 });
 
-export const getSeriesBySlug = cache(async (brandId: string, seriesSlug: string): Promise<CatalogSeries | null> => {
+export const getSeriesBySlug = unstable_cache(async (brandId: string, seriesSlug: string): Promise<CatalogSeries | null> => {
   try {
     const list = await getSeriesForBrand(brandId);
     const directMatch = list.find((series) => series.slug === seriesSlug);
@@ -169,11 +182,14 @@ export const getSeriesBySlug = cache(async (brandId: string, seriesSlug: string)
   } catch {
     return null;
   }
+}, ["catalog-series-by-slug"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-series"],
 });
 
-export const getModelsForSeries = cache(async (seriesId: string): Promise<CatalogModel[]> => {
+export const getModelsForSeries = unstable_cache(async (seriesId: string): Promise<CatalogModel[]> => {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const withSlug = await supabase
       .from("models")
       .select("id, series_id, name, slug, image_url")
@@ -204,9 +220,12 @@ export const getModelsForSeries = cache(async (seriesId: string): Promise<Catalo
   } catch {
     return [];
   }
+}, ["catalog-models"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-models"],
 });
 
-export const getModelBySlug = cache(async (seriesId: string, modelSlug: string): Promise<CatalogModel | null> => {
+export const getModelBySlug = unstable_cache(async (seriesId: string, modelSlug: string): Promise<CatalogModel | null> => {
   try {
     const list = await getModelsForSeries(seriesId);
     const directMatch = list.find((model) => model.slug === modelSlug);
@@ -220,11 +239,14 @@ export const getModelBySlug = cache(async (seriesId: string, modelSlug: string):
   } catch {
     return null;
   }
+}, ["catalog-model-by-slug"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-models"],
 });
 
-export const getModelScreenGuards = cache(async (modelId: string): Promise<ModelScreenGuard[]> => {
+export const getModelScreenGuards = unstable_cache(async (modelId: string): Promise<ModelScreenGuard[]> => {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("model_screen_guards")
       .select("id, guard_type, price")
@@ -239,11 +261,14 @@ export const getModelScreenGuards = cache(async (modelId: string): Promise<Model
   } catch {
     return [];
   }
+}, ["catalog-model-screen-guards"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-screen-guards"],
 });
 
-export const getRepairCategories = cache(async (serviceType: "mobile" | "laptop"): Promise<RepairCategory[]> => {
+export const getRepairCategories = unstable_cache(async (serviceType: "mobile" | "laptop"): Promise<RepairCategory[]> => {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("repair_categories")
       .select("id, name, image_url, service_type")
@@ -258,15 +283,18 @@ export const getRepairCategories = cache(async (serviceType: "mobile" | "laptop"
   } catch {
     return [];
   }
+}, ["catalog-repair-categories"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-repairs"],
 });
 
-export const getRepairSubcategories = cache(async (categoryIds: string[]): Promise<RepairSubcategory[]> => {
+export const getRepairSubcategories = unstable_cache(async (categoryIds: string[]): Promise<RepairSubcategory[]> => {
   if (categoryIds.length === 0) {
     return [];
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("repair_subcategories")
       .select("id, category_id, name, image_url, price")
@@ -281,4 +309,7 @@ export const getRepairSubcategories = cache(async (categoryIds: string[]): Promi
   } catch {
     return [];
   }
+}, ["catalog-repair-subcategories"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-repairs"],
 });

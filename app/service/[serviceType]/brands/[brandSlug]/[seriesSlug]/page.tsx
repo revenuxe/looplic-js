@@ -7,7 +7,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ModelsCatalogPage } from "@/src/components/next/ModelsCatalogPage";
 import { getBrandBySlug, getModelsForSeries, getSeriesBySlug } from "@/src/lib/data/catalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{

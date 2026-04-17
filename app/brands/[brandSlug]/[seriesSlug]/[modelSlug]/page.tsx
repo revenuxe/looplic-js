@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
 import { getBrandBySlug, getModelBySlug, getModelScreenGuards, getSeriesBySlug } from "@/src/lib/data/catalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{
