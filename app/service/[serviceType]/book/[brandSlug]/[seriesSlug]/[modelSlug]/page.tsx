@@ -10,7 +10,7 @@ import {
   getSeriesBySlug,
 } from "@/src/lib/data/catalog";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{

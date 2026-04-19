@@ -9,7 +9,7 @@ import { ServiceLandingPage } from "@/src/components/next/ServiceLandingPage";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{
@@ -29,10 +29,6 @@ const serviceMap = {
     activeTab: "laptop-repair" as const,
   },
 };
-
-export function generateStaticParams() {
-  return Object.keys(serviceMap).map((serviceType) => ({ serviceType }));
-}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { serviceType } = await params;

@@ -17,6 +17,10 @@ export const metadata: Metadata = {
     template: "%s | Looplic",
   },
   description: "Doorstep screen guard installation and repair booking platform for mobile and laptop devices.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

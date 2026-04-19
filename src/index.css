@@ -131,4 +131,129 @@
   .shadow-elevated-brand {
     box-shadow: var(--shadow-elevated);
   }
+
+  .looplic-loader {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    color: hsl(var(--foreground));
+  }
+
+  .looplic-loader__mark {
+    position: relative;
+    display: grid;
+    width: 4rem;
+    height: 4rem;
+    place-items: center;
+    border-radius: 1.35rem;
+    background: hsl(var(--card) / 0.82);
+    box-shadow: 0 20px 50px -22px hsl(var(--primary) / 0.72), inset 0 0 0 1px hsl(var(--primary) / 0.14);
+    backdrop-filter: blur(12px);
+  }
+
+  .looplic-loader__ring {
+    position: absolute;
+    inset: 0.38rem;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, hsl(var(--primary)), hsl(var(--accent)), transparent 72%, hsl(var(--primary)));
+    animation: looplic-spin 0.95s linear infinite;
+    mask: radial-gradient(farthest-side, transparent calc(100% - 0.25rem), #000 calc(100% - 0.22rem));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 0.25rem), #000 calc(100% - 0.22rem));
+  }
+
+  .looplic-loader__icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.7rem;
+    object-fit: contain;
+    animation: looplic-breathe 1.45s ease-in-out infinite;
+  }
+
+  .looplic-loader__copy {
+    display: grid;
+    justify-items: center;
+    gap: 0.42rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .looplic-loader__copy i {
+    display: block;
+    width: 4.75rem;
+    height: 0.18rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: hsl(var(--primary) / 0.12);
+  }
+
+  .looplic-loader__copy i::after {
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gradient-brand);
+    content: "";
+    animation: looplic-track 1.05s ease-in-out infinite;
+  }
+
+  .route-loader {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  .route-loader--visible {
+    opacity: 1;
+  }
+
+  .route-loader__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at center, hsl(var(--primary) / 0.08), transparent 34%),
+      hsl(var(--background) / 0.34);
+    backdrop-filter: blur(4px);
+  }
+
+  .route-loader__center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -46%) scale(0.96);
+    transition: transform 180ms ease;
+  }
+
+  .route-loader--visible .route-loader__center {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  @keyframes looplic-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes looplic-breathe {
+    0%, 100% {
+      transform: scale(0.94);
+    }
+    50% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes looplic-track {
+    0% {
+      transform: translateX(-110%);
+    }
+    100% {
+      transform: translateX(260%);
+    }
+  }
 }

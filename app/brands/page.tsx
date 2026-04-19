@@ -6,7 +6,7 @@ import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "All Mobile Brands",
