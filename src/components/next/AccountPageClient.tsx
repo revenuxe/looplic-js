@@ -467,18 +467,18 @@ export function AccountPageClient() {
   const statusCounts = new Map(statusTabs.map((tab) => [tab.id, tab.id === "all" ? bookings.length : bookings.filter((booking) => booking.status === tab.id).length]));
 
   return (
-    <main className="flex-1 bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.12),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0)_0%,_rgba(248,250,252,0.92)_100%)]">
-      <div className="container max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
-        <section className="overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-sm">
-          <div className="border-b border-border/70 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-4 py-5 text-white sm:px-6 sm:py-6">
+    <main className="flex-1 bg-[radial-gradient(circle_at_top,_hsl(211_100%_50%_/_0.14),_transparent_30%),radial-gradient(circle_at_80%_8%,_hsl(165_100%_42%_/_0.14),_transparent_26%),linear-gradient(180deg,_rgba(255,255,255,0)_0%,_rgba(248,250,252,0.92)_100%)]">
+      <div className="container max-w-6xl px-3 py-3 sm:px-6 sm:py-6 lg:py-8">
+        <section className="overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-elevated-brand sm:rounded-[28px]">
+          <div className="border-b border-white/15 gradient-brand px-4 py-4 text-white sm:px-6 sm:py-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="max-w-2xl min-w-0">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/85 sm:mb-4 sm:text-[11px] sm:tracking-[0.2em]">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Orders Dashboard
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-sm">
                     <User className="h-5 w-5 text-white" />
                   </div>
                   <div className="min-w-0">
@@ -486,16 +486,16 @@ export function AccountPageClient() {
                     <p className="truncate text-sm text-white/70">{user.email}</p>
                   </div>
                 </div>
-                <p className="mt-4 max-w-xl text-sm leading-6 text-white/75">
-                  Track every booking, update your address fast, and cancel booked requests before they are confirmed.
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/85 sm:mt-4">
+                  Track bookings, update your address, and act on pending requests quickly.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/60">Primary contact</div>
+                <div className="min-w-0 flex-1 rounded-2xl border border-white/20 bg-white/15 px-4 py-3 text-sm sm:flex-none">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/70 sm:text-xs sm:tracking-[0.22em]">Primary contact</div>
                   <div className="mt-1 font-semibold text-white">{profile?.phone || "Add your phone number"}</div>
                 </div>
-                <Button variant="secondary" size="sm" onClick={handleSignOut} className="rounded-xl border border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                <Button variant="secondary" size="sm" onClick={handleSignOut} className="rounded-xl border border-white/20 bg-white/15 text-white hover:bg-white/20 hover:text-white">
                   <LogOut className="h-4 w-4" />
                   Logout
                 </Button>
@@ -503,17 +503,17 @@ export function AccountPageClient() {
             </div>
           </div>
 
-          <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-6">
+          <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-4 sm:gap-3 sm:p-6">
             {dashboardStats.map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-border/70 bg-background/80 p-4">
+              <div key={stat.label} className="rounded-2xl border border-primary/10 bg-primary/[0.04] p-3 sm:p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{stat.label}</p>
-                    <p className="mt-2 text-2xl font-black tracking-tight text-foreground">{stat.value}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[11px] sm:tracking-[0.18em]">{stat.label}</p>
+                    <p className="mt-1 text-2xl font-black tracking-tight text-foreground sm:mt-2">{stat.value}</p>
+                    <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{stat.hint}</p>
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-foreground">
-                    <stat.icon className="h-5 w-5" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl gradient-brand text-primary-foreground sm:h-10 sm:w-10">
+                    <stat.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                 </div>
               </div>
@@ -521,9 +521,9 @@ export function AccountPageClient() {
           </div>
         </section>
 
-        <section className="mt-5 grid gap-5 xl:grid-cols-[1.4fr_0.95fr]">
-          <div className="order-2 space-y-4 xl:order-1">
-            <div className="rounded-[24px] border border-border/70 bg-card p-4 shadow-sm">
+        <section className="mt-4 grid gap-4 xl:grid-cols-[1.4fr_0.95fr]">
+          <div className="order-1 space-y-4">
+            <div className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:rounded-[24px] sm:p-4">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-3">
                   <div>
@@ -536,7 +536,7 @@ export function AccountPageClient() {
                   <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search orders" className="h-11 rounded-xl border-border/70 bg-background pl-9" />
                 </div>
 
-                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   {statusTabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
@@ -544,13 +544,13 @@ export function AccountPageClient() {
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
-                        className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold whitespace-nowrap transition-all ${
+                        className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-center text-[11px] font-bold transition-all sm:gap-2 sm:px-3 sm:text-xs ${
                           isActive ? "border-transparent gradient-brand text-primary-foreground shadow-md" : "border-border/70 bg-background text-muted-foreground"
                         }`}
                       >
-                        <tab.icon className="h-3.5 w-3.5" />
-                        {tab.label}
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] ${isActive ? "bg-white/20" : "bg-secondary text-foreground"}`}>{statusCounts.get(tab.id) || 0}</span>
+                        <tab.icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="min-w-0 truncate">{tab.label}</span>
+                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${isActive ? "bg-white/20" : "bg-secondary text-foreground"}`}>{statusCounts.get(tab.id) || 0}</span>
                       </button>
                     );
                   })}
@@ -577,18 +577,34 @@ export function AccountPageClient() {
             ) : (
               <div className="space-y-4">
                 {filteredBookings.map((booking) => (
-                  <article key={booking.id} className="rounded-[24px] border border-border/70 bg-card p-4 shadow-sm">
+                  <article key={booking.id} className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:rounded-[24px] sm:p-4">
                     <div className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">{booking.booking_code || `#${booking.id.slice(0, 8).toUpperCase()}`}</span>
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusColors[booking.status] || "border-border bg-secondary text-foreground"}`}>
-                          {formatStatus(booking.status)}
-                        </span>
-                      </div>
-
-                      <div>
-                        <h3 className="text-base font-black tracking-tight text-foreground">{getBookingTitle(booking)}</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">{getBookingDescriptor(booking)}</p>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">{booking.booking_code || `#${booking.id.slice(0, 8).toUpperCase()}`}</span>
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusColors[booking.status] || "border-border bg-secondary text-foreground"}`}>
+                              {formatStatus(booking.status)}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-base font-black tracking-tight text-foreground">{getBookingTitle(booking)}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">{getBookingDescriptor(booking)}</p>
+                          </div>
+                        </div>
+                        {canCancelBooking(booking) ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelBooking(booking.id)}
+                            disabled={cancelingBookingId === booking.id}
+                            className="h-11 w-full rounded-xl border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-700 sm:w-auto"
+                          >
+                            {cancelingBookingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                            Cancel order
+                          </Button>
+                        ) : null}
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
@@ -605,25 +621,12 @@ export function AccountPageClient() {
                       </div>
 
                       <div className="rounded-2xl border border-border/70 bg-background p-3">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
                           <div>
                             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Timeline</div>
                             <div className="mt-2 text-sm font-semibold text-foreground">Booked on {formatDate(booking.created_at)}</div>
                             <div className="mt-1 text-sm text-muted-foreground">{booking.notes || "No additional notes were added to this order."}</div>
                           </div>
-                          {canCancelBooking(booking) ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancelBooking(booking.id)}
-                              disabled={cancelingBookingId === booking.id}
-                              className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-700"
-                            >
-                              {cancelingBookingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                              Cancel
-                            </Button>
-                          ) : null}
                         </div>
                         {canCancelBooking(booking) ? <p className="mt-3 text-xs text-muted-foreground">You can cancel this booking until it is confirmed by the team.</p> : null}
                       </div>
@@ -634,7 +637,7 @@ export function AccountPageClient() {
             )}
           </div>
 
-          <aside className="order-1 space-y-4 xl:order-2">
+          <aside className="order-2 space-y-4">
             <section className="rounded-[24px] border border-border/70 bg-card p-4 shadow-sm sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
