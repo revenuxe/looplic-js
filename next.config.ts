@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "zhoverulwcybtgrezaob.supabase.co",
       },
+      {
+        protocol: "https",
+        hostname: "www.fixma.in",
+      },
+      {
+        protocol: "https",
+        hostname: "fixma.in",
+      },
     ],
   },
 };
