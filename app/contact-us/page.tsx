@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
+import Image from "next/image";
 
 import { InfoPageLayout } from "@/src/components/next/InfoPageLayout";
 import { companyName, supportEmail, supportPhone, supportPhoneDisplay, whatsappUrl } from "@/src/lib/company";
@@ -37,7 +38,7 @@ export default function ContactUsPage() {
 
         <a href={whatsappUrl} target="_blank" rel="noreferrer" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm transition-colors hover:border-emerald-300">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-            <MessageCircle className="h-5 w-5" />
+            <Image src="/whatsapp.svg" alt="" width={20} height={20} className="h-5 w-5" aria-hidden="true" />
           </div>
           <h2 className="mt-4 text-lg font-black tracking-tight text-foreground">WhatsApp</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Start a chat for fast support and booking-related communication.</p>

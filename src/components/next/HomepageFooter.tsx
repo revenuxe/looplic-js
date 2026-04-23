@@ -1,4 +1,5 @@
-import { Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import logo from "@/assets/looplic-logo.webp";
@@ -44,7 +45,7 @@ export function HomepageFooter() {
                   <Mail className="h-4 w-4" /> {supportEmail}
                 </a>
                 <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 md:justify-start">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp support
+                  <Image src="/whatsapp.svg" alt="" width={16} height={16} className="h-4 w-4" aria-hidden="true" /> WhatsApp support
                 </a>
               </div>
             </div>
@@ -58,7 +59,7 @@ export function HomepageFooter() {
               className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 transition-all hover:bg-emerald-100"
               aria-label="WhatsApp support"
             >
-              <MessageCircle className="h-4 w-4" />
+              <Image src="/whatsapp.svg" alt="" width={16} height={16} className="h-4 w-4" aria-hidden="true" />
             </a>
           </div>
 
