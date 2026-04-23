@@ -279,11 +279,8 @@ export function BookingStepFlow({
       return;
     }
 
-    if (!profileLoaded) {
-      return;
-    }
-
-    pushFlow(hasSavedProfile ? "schedule" : "details", selection);
+    const nextStep = profileLoaded && hasSavedProfile ? "schedule" : "details";
+    pushFlow(nextStep, selection);
   }
 
   async function handleBook() {
