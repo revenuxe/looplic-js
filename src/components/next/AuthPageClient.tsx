@@ -1,25 +1,117 @@
 "use client";
 
-import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import logo from "@/assets/looplic-logo.webp";
 import { createClient } from "@/src/lib/supabase/client";
 
 export function AuthPageClient() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<"email" | "google" | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/account";
+  const redirect = searchParams.get("redirect") || "/";
   const supabase = createClient();
+  const callbackUrl = useMemo(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const callback = new URL("/auth/callback", window.location.origin);
+    callback.searchParams.set("next", redirect);
+    return callback.toString();
+  }, [redirect]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (ignore) {
+        return;
+      }
+
+      if (session?.user) {
+        router.replace(redirect);
+        router.refresh();
+        return;
+      }
+
+      setCheckingSession(false);
+    }
+
+    checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (ignore) {
+        return;
+      }
+
+      if (session?.user) {
+        router.replace(redirect);
+        router.refresh();
+        return;
+      }
+
+      setCheckingSession(false);
+    });
+
+    return () => {
+      ignore = true;
+      subscription.unsubscribe();
+    };
+  }, [redirect, router, supabase.auth]);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  function setAuthMode(nextMode: "login" | "signup") {
+    setMode(nextMode);
+    const nextQuery = new URLSearchParams(searchParams.toString());
+    nextQuery.set("mode", nextMode);
+    router.replace(`/auth?${nextQuery.toString()}`, { scroll: false });
+  }
+
+  async function handleGoogleAuth() {
+    if (!callbackUrl) {
+      return;
+    }
+
+    setSubmitting("google");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
+      },
+    });
+
+    if (error) {
+      toast.error(error.message);
+      setSubmitting(null);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,7 +124,7 @@ export function AuthPageClient() {
       return;
     }
 
-    setSubmitting(true);
+    setSubmitting("email");
 
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({
@@ -42,58 +134,155 @@ export function AuthPageClient() {
 
       if (error) {
         toast.error(error.message);
-        setSubmitting(false);
+        setSubmitting(null);
         return;
       }
 
       toast.success("Welcome back!");
       router.replace(redirect);
       router.refresh();
-      setSubmitting(false);
+      setSubmitting(null);
       return;
     }
 
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
-      setSubmitting(false);
+      setSubmitting(null);
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      setSubmitting(null);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/account` : undefined,
+        emailRedirectTo: callbackUrl,
         data: { full_name: name },
       },
     });
 
     if (error) {
       toast.error(error.message);
-      setSubmitting(false);
+      setSubmitting(null);
       return;
     }
 
-    toast.success("Account created! Check your email to verify.");
-    router.replace(redirect);
+    toast.success(data.session ? "Account created!" : "Account created. Verify your email to complete sign in.");
+    router.replace(data.session ? redirect : "/");
     router.refresh();
-    setSubmitting(false);
+    setSubmitting(null);
+  }
+
+  if (checkingSession) {
+    return (
+      <main className="flex flex-1 items-center justify-center p-4">
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Preparing secure sign in...
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
+    <main className="flex flex-1 items-center justify-center p-4 sm:p-6">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[28px] border border-border bg-card shadow-elevated-brand lg:grid-cols-[1.02fr_0.98fr]">
+        <section className="hidden border-r border-border bg-[radial-gradient(circle_at_top_left,_hsl(211_100%_50%_/_0.14),_transparent_35%),radial-gradient(circle_at_75%_20%,_hsl(165_100%_42%_/_0.12),_transparent_28%),linear-gradient(180deg,_rgba(255,255,255,0)_0%,_rgba(248,250,252,0.96)_100%)] p-8 lg:block">
           <Link href="/">
-            <img src={logo.src} alt="Looplic" className="mx-auto mb-4 h-8" />
+            <img src={logo.src} alt="Looplic" className="h-8" />
           </Link>
-          <h1 className="text-xl font-extrabold text-foreground">{mode === "login" ? "Welcome Back" : "Create Account"}</h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {mode === "login" ? "Sign in to track your bookings" : "Sign up to manage your bookings"}
-          </p>
-        </div>
+          <div className="mt-10 max-w-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Secure access
+            </div>
+            <h1 className="mt-5 text-4xl font-black tracking-tight text-foreground">
+              {mode === "login" ? "Sign in and get back to your bookings fast." : "Create your Looplic account in a minute."}
+            </h1>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">
+              Continue with Google or use your email and password. Once you&apos;re in, we&apos;ll take you straight back to the app flow.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-3">
+            {[
+              { icon: Sparkles, title: "Smooth app-style flow", text: "Authentication stays quick, clean, and redirect-safe." },
+              { icon: CheckCircle2, title: "Bookings tied to your account", text: "Track service requests, updates, and saved profile details in one place." },
+              { icon: ArrowRight, title: "Fast return to the homepage", text: "After sign in or account creation, you land back in the main experience." },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl border border-border/70 bg-card/80 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground">{item.title}</div>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.text}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <section className="p-5 sm:p-7">
+          <div className="mx-auto w-full max-w-md">
+            <div className="mb-6 text-center lg:text-left">
+              <Link href="/" className="inline-flex lg:hidden">
+                <img src={logo.src} alt="Looplic" className="mx-auto mb-4 h-8" />
+              </Link>
+              <div className="inline-flex rounded-full border border-border bg-background p-1">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode("login")}
+                  className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuthMode("signup")}
+                  className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${mode === "signup" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  Create Account
+                </button>
+              </div>
+              <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">{mode === "login" ? "Welcome back" : "Create your account"}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {mode === "login" ? "Sign in to continue with your bookings and saved details." : "Set up your account and jump right into the Looplic experience."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              disabled={submitting !== null}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-border bg-background text-sm font-bold text-foreground transition-colors hover:bg-secondary disabled:opacity-60"
+            >
+              {submitting === "google" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                  <path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 0 1-2 3.1v2.6h3.3c1.9-1.8 3-4.3 3-7.5Z" />
+                  <path fill="#34A853" d="M12 22c2.7 0 5-1 6.7-2.7l-3.3-2.6c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z" />
+                  <path fill="#FBBC05" d="M6.4 13.5A6 6 0 0 1 6 12c0-.5.1-1 .3-1.5V7.9H3.1A10 10 0 0 0 2 12c0 1.6.4 3 1.1 4.1l3.3-2.6Z" />
+                  <path fill="#EA4335" d="M12 6.4c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 12 2a10 10 0 0 0-8.9 5.9l3.3 2.6c.8-2.4 3-4.1 5.6-4.1Z" />
+                </svg>
+              )}
+              Continue with Google
+            </button>
+
+            <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              or use email
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
           {mode === "signup" ? (
             <div className="relative">
               <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -143,33 +332,51 @@ export function AuthPageClient() {
             </button>
           </div>
 
+          {mode === "signup" ? (
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+                minLength={6}
+                maxLength={72}
+                className="w-full rounded-2xl border border-border bg-card py-3 pl-10 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+          ) : null}
+
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting !== null}
             className="flex w-full items-center justify-center gap-2 rounded-2xl gradient-brand py-3.5 text-sm font-extrabold text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {submitting === "email" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {mode === "login" ? "Sign In" : "Create Account"}
           </button>
-        </form>
+            </form>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          {mode === "login" ? (
-            <>
-              Don&apos;t have an account?{" "}
-              <button onClick={() => setMode("signup")} className="font-bold text-primary">
-                Sign Up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button onClick={() => setMode("login")} className="font-bold text-primary">
-                Sign In
-              </button>
-            </>
-          )}
-        </p>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              {mode === "login" ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <button type="button" onClick={() => setAuthMode("signup")} className="font-bold text-primary">
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => setAuthMode("login")} className="font-bold text-primary">
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        </section>
       </div>
     </main>
   );
