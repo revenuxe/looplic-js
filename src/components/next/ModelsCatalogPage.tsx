@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

@@ -3,7 +3,7 @@ import { createClient } from "@/src/lib/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree, GripVertical
 } from "lucide-react";
 import ImageUpload from "./ImageUpload";
 
@@ -44,6 +44,28 @@ const uploadServiceImage = async (bucket: string, id: string, file: File) => {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 };
 
+const revalidateBrandPages = async (serviceType: string) => {
+  const paths =
+    serviceType === "laptop"
+      ? ["/service/laptop-repair", "/service/laptop-repair/brands"]
+      : ["/", "/brands", "/service/mobile-repair", "/service/mobile-repair/brands"];
+
+  try {
+    await fetch("/api/revalidate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        paths,
+        tags: ["catalog", "catalog-brands", "homepage-brands"],
+      }),
+    });
+  } catch {
+    // Ignore cache refresh errors so admin writes still succeed.
+  }
+};
+
 // ─── Brands Tab ─────────────────────────────
 const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -60,6 +82,9 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [moveBrand, setMoveBrand] = useState<Brand | null>(null);
+  const [movePosition, setMovePosition] = useState("");
+  const [moveSaving, setMoveSaving] = useState(false);
 
   const fetch = async () => {
     setLoading(true);
@@ -80,7 +105,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       if (image) finalUrl = await uploadServiceImage("brand-images", data.id, image);
       if (finalUrl) await supabase.from("brands").update({ image_url: finalUrl }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { toast.success("Brand added"); reset(); fetch(); }
+    if (error) toast.error(error.message); else { await revalidateBrandPages(serviceType); toast.success("Brand added"); reset(); fetch(); }
     setSaving(false);
   };
 
@@ -90,6 +115,11 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     setEditImagePreview(b.image_url);
     setEditImage(null);
     setEditImageUrl(null);
+  };
+
+  const openMove = (brand: Brand, currentIndex: number) => {
+    setMoveBrand(brand);
+    setMovePosition(String(currentIndex + 1));
   };
 
   const handleEdit = async () => {
@@ -102,13 +132,64 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       if (url) updates.image_url = url;
     }
     await supabase.from("brands").update(updates).eq("id", editBrand.id);
+    await revalidateBrandPages(serviceType);
     toast.success("Updated"); setEditBrand(null); fetch();
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("brands" as any) as any).delete().eq("id", id);
+    await revalidateBrandPages(serviceType);
     fetch(); toast.success("Deleted");
+  };
+
+  const handleMove = async () => {
+    if (!moveBrand || brands.length === 0) return;
+
+    const parsedPosition = Number.parseInt(movePosition, 10);
+    if (Number.isNaN(parsedPosition)) {
+      toast.error("Enter a valid position");
+      return;
+    }
+
+    const targetIndex = Math.min(Math.max(parsedPosition, 1), brands.length) - 1;
+    const currentIndex = brands.findIndex((brand) => brand.id === moveBrand.id);
+
+    if (currentIndex === -1) {
+      toast.error("Brand not found");
+      return;
+    }
+
+    if (currentIndex === targetIndex) {
+      setMoveBrand(null);
+      setMovePosition("");
+      return;
+    }
+
+    const reorderedBrands = [...brands];
+    const [selectedBrand] = reorderedBrands.splice(currentIndex, 1);
+    reorderedBrands.splice(targetIndex, 0, selectedBrand);
+
+    setMoveSaving(true);
+
+    const updates = reorderedBrands.map((brand, index) =>
+      (supabase.from("brands") as any).update({ sort_order: index + 1 }).eq("id", brand.id),
+    );
+
+    const results = await Promise.all(updates);
+    const failed = results.find((result: any) => result.error);
+
+    if (failed?.error) {
+      toast.error(failed.error.message || "Unable to move brand");
+    } else {
+      await revalidateBrandPages(serviceType);
+      setBrands(reorderedBrands.map((brand, index) => ({ ...brand, sort_order: index + 1 })));
+      toast.success("Brand position updated");
+      setMoveBrand(null);
+      setMovePosition("");
+    }
+
+    setMoveSaving(false);
   };
 
   const reset = () => { setShowAdd(false); setName(""); setImage(null); setImagePreview(null); setImageUrl(null); };
@@ -149,15 +230,54 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
         </div>
       </Modal>
 
+      <Modal
+        open={!!moveBrand}
+        onClose={() => {
+          if (moveSaving) return;
+          setMoveBrand(null);
+          setMovePosition("");
+        }}
+        title="Move Brand"
+      >
+        <div className="space-y-3">
+          <div className="text-xs text-muted-foreground">
+            {moveBrand ? `Move ${moveBrand.name} to a new position in the brand list.` : ""}
+          </div>
+          <input
+            type="number"
+            min={1}
+            max={brands.length || 1}
+            value={movePosition}
+            onChange={(e) => setMovePosition(e.target.value)}
+            autoFocus
+            placeholder={`1 - ${brands.length}`}
+            className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <button
+            onClick={handleMove}
+            disabled={moveSaving || !movePosition.trim()}
+            className="w-full py-2.5 rounded-xl gradient-brand text-primary-foreground text-xs font-bold disabled:opacity-60 flex items-center justify-center gap-1.5"
+          >
+            {moveSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <GripVertical className="w-3.5 h-3.5" />} Move Brand
+          </button>
+        </div>
+      </Modal>
+
       {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : brands.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Shield className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No brands yet</p></div>
       ) : (
         <div className="space-y-2">
-          {brands.map((b) => (
+          {brands.map((b, index) => (
             <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
               {b.image_url ? <img src={b.image_url} alt={b.name} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground flex-shrink-0">{b.name.charAt(0)}</div>}
-              <span className="flex-1 text-sm font-semibold text-foreground truncate">{b.name}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-foreground truncate block">{b.name}</span>
+                <span className="text-[10px] font-semibold text-muted-foreground">Position {index + 1}</span>
+              </div>
               <div className="flex items-center gap-1">
+                <button onClick={() => openMove(b, index)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary" title="Move brand">
+                  <GripVertical className="w-3.5 h-3.5" />
+                </button>
                 <button onClick={() => openEdit(b)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"><Pencil className="w-3.5 h-3.5" /></button>
                 <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
