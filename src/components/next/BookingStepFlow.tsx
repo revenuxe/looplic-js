@@ -82,6 +82,7 @@ export function BookingStepFlow({
   const [timeSlot, setTimeSlot] = useState<(typeof TIME_SLOTS)[number] | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [optionSearch, setOptionSearch] = useState("");
 
   const stepParam = searchParams.get("step");
   const selectedCategoryId = searchParams.get("category");
@@ -111,6 +112,30 @@ export function BookingStepFlow({
     () => (selectedCategoryId ? repairSubcategories.filter((subcategory) => subcategory.category_id === selectedCategoryId) : []),
     [repairSubcategories, selectedCategoryId],
   );
+  const filteredGuards = useMemo(() => {
+    const query = optionSearch.trim().toLowerCase();
+    if (!query) {
+      return guards;
+    }
+
+    return guards.filter((guard) => displayGuardType(guard.guard_type).toLowerCase().includes(query));
+  }, [guards, optionSearch]);
+  const filteredCategories = useMemo(() => {
+    const query = optionSearch.trim().toLowerCase();
+    if (!query) {
+      return repairCategories;
+    }
+
+    return repairCategories.filter((category) => category.name.toLowerCase().includes(query));
+  }, [optionSearch, repairCategories]);
+  const filteredSubcategories = useMemo(() => {
+    const query = optionSearch.trim().toLowerCase();
+    if (!query) {
+      return visibleSubcategories;
+    }
+
+    return visibleSubcategories.filter((subcategory) => subcategory.name.toLowerCase().includes(query));
+  }, [optionSearch, visibleSubcategories]);
 
   const selectedOption = isRepair ? selectedSubcategory : selectedGuard;
   const selectedLabel = isRepair ? selectedSubcategory?.name || "" : displayGuardType(selectedGuard?.guard_type || "");
@@ -273,6 +298,10 @@ export function BookingStepFlow({
     }
   }, [currentStep, hasSavedProfile, isRepair, profileLoaded, selectedCategoryId, selectedOption, user]);
 
+  useEffect(() => {
+    setOptionSearch("");
+  }, [currentStep, selectedCategoryId, model.id]);
+
   async function continueAfterSelection(selection: { guard?: string; category?: string; repair?: string }) {
     if (!user) {
       router.push(`/auth?redirect=${encodeURIComponent(buildFlowHref("details", selection))}`);
@@ -397,15 +426,35 @@ export function BookingStepFlow({
         </h1>
         <p className="mb-5 text-xs text-muted-foreground">for <span className="font-bold text-foreground">{brand.name} {model.name}</span></p>
 
+        {currentStep === "select" || currentStep === "repair" ? (
+          <div className="relative mb-5 max-w-sm">
+            <input
+              type="text"
+              placeholder={
+                currentStep === "repair"
+                  ? "Search repair service..."
+                  : isRepair
+                    ? "Search repair category..."
+                    : "Search screen guard..."
+              }
+              value={optionSearch}
+              onChange={(event) => setOptionSearch(event.target.value)}
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+        ) : null}
+
         {currentStep === "select" && !isRepair ? (
-          guards.length === 0 ? (
+          filteredGuards.length === 0 ? (
             <div className="py-16 text-center">
               <Shield className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm font-semibold text-muted-foreground">No screen guards available for this model</p>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {optionSearch ? "No screen guards match your search" : "No screen guards available for this model"}
+              </p>
             </div>
           ) : (
             <div className="space-y-2.5">
-              {guards.map((guard) => {
+              {filteredGuards.map((guard) => {
                 const label = displayGuardType(guard.guard_type);
                 return (
                   <button key={guard.id} onClick={() => continueAfterSelection({ guard: guard.id })} className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-card-brand">
@@ -420,14 +469,16 @@ export function BookingStepFlow({
         ) : null}
 
         {currentStep === "select" && isRepair ? (
-          repairCategories.length === 0 ? (
+          filteredCategories.length === 0 ? (
             <div className="py-16 text-center">
               <Wrench className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm font-semibold text-muted-foreground">No repair categories available</p>
+              <p className="text-sm font-semibold text-muted-foreground">
+                {optionSearch ? "No repair categories match your search" : "No repair categories available"}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {repairCategories.map((category) => (
+              {filteredCategories.map((category) => (
                 <button key={category.id} onClick={() => pushFlow("repair", { category: category.id, repair: null, guard: null })} className="flex flex-col items-center gap-2 rounded-2xl border-2 border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-card-brand">
                   {category.image_url ? <img src={category.image_url} alt={category.name} className="h-10 w-10 rounded-xl object-contain" /> : <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary"><Wrench className="h-5 w-5 text-primary" /></div>}
                   <span className="text-center text-xs font-bold text-foreground">{category.name}</span>
@@ -443,10 +494,12 @@ export function BookingStepFlow({
               <div className="font-bold">{selectedCategory?.name || "Repair Category"}</div>
               <div className="mt-1 text-xs text-muted-foreground">Choose the exact repair to continue</div>
             </div>
-            {visibleSubcategories.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No services available in this category</p>
+            {filteredSubcategories.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {optionSearch ? "No repair services match your search" : "No services available in this category"}
+              </p>
             ) : (
-              visibleSubcategories.map((subcategory) => (
+              filteredSubcategories.map((subcategory) => (
                 <button key={subcategory.id} onClick={() => continueAfterSelection({ category: selectedCategoryId || "", repair: subcategory.id })} className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-card-brand">
                   {subcategory.image_url ? <img src={subcategory.image_url} alt={subcategory.name} className="h-10 w-10 rounded-xl object-contain" /> : <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary"><Wrench className="h-5 w-5 text-muted-foreground" /></div>}
                   <div className="flex-1"><span className="text-sm font-bold text-foreground">{subcategory.name}</span></div>
