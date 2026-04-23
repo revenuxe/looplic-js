@@ -189,8 +189,9 @@ export function AuthPageClient() {
       }
 
       toast.success("Welcome back!");
+      const target = resolveRedirectTarget();
       clearPersistedRedirect();
-      router.replace(resolveRedirectTarget());
+      router.replace(target);
       router.refresh();
       setSubmitting(null);
       return;
@@ -225,8 +226,9 @@ export function AuthPageClient() {
 
     toast.success(data.session ? "Account created!" : "Account created. Verify your email to complete sign in.");
     if (data.session) {
+      const target = resolveRedirectTarget();
       clearPersistedRedirect();
-      router.replace(resolveRedirectTarget());
+      router.replace(target);
     } else {
       router.replace("/");
     }
