@@ -50,6 +50,32 @@ export type RepairSubcategory = {
   price: number;
 };
 
+export type SearchSeries = {
+  id: string;
+  brand_id: string;
+  brand_name: string;
+  brand_slug: string;
+  name: string;
+  slug: string;
+};
+
+export type SearchModel = {
+  id: string;
+  series_id: string;
+  series_name: string;
+  series_slug: string;
+  brand_name: string;
+  brand_slug: string;
+  name: string;
+  slug: string;
+};
+
+export type CatalogSearchIndex = {
+  brands: CatalogBrand[];
+  series: SearchSeries[];
+  models: SearchModel[];
+};
+
 const fallbackBrands: CatalogBrand[] = [
   { id: "apple", name: "Apple", slug: "apple", letter: "A", gradient: "from-gray-700 to-gray-900", image_url: null, service_type: "mobile" },
   { id: "samsung", name: "Samsung", slug: "samsung", letter: "S", gradient: "from-blue-500 to-blue-700", image_url: null, service_type: "mobile" },
@@ -358,4 +384,104 @@ export const getRepairSubcategories = unstable_cache(async (categoryIds: string[
 }, ["catalog-repair-subcategories"], {
   revalidate: CATALOG_REVALIDATE_SECONDS,
   tags: ["catalog", "catalog-repairs"],
+});
+
+export const getCatalogSearchIndex = unstable_cache(async (serviceType: "mobile" | "laptop"): Promise<CatalogSearchIndex> => {
+  try {
+    const brands = await getBrandsForListing(serviceType);
+
+    if (brands.length === 0) {
+      return { brands: [], series: [], models: [] };
+    }
+
+    const supabase = createPublicClient();
+    const brandIds = brands.map((brand) => brand.id);
+    const brandMap = new Map(brands.map((brand) => [brand.id, brand]));
+
+    const seriesWithSlug = await supabase
+      .from("series")
+      .select("id, brand_id, name, slug")
+      .in("brand_id", brandIds)
+      .order("name");
+
+    const seriesRows =
+      !seriesWithSlug.error && seriesWithSlug.data
+        ? seriesWithSlug.data
+        : (
+            await supabase
+              .from("series")
+              .select("id, brand_id, name")
+              .in("brand_id", brandIds)
+              .order("name")
+          ).data ?? [];
+
+    const series = seriesRows
+      .map((seriesItem) => {
+        const brand = brandMap.get(seriesItem.brand_id);
+        if (!brand) {
+          return null;
+        }
+
+        return {
+          id: seriesItem.id,
+          brand_id: seriesItem.brand_id,
+          brand_name: brand.name,
+          brand_slug: brand.slug,
+          name: seriesItem.name,
+          slug: ("slug" in seriesItem && typeof seriesItem.slug === "string" ? seriesItem.slug : null) || slugify(seriesItem.name) || seriesItem.id,
+        } satisfies SearchSeries;
+      })
+      .filter((item): item is SearchSeries => item !== null);
+
+    if (series.length === 0) {
+      return { brands, series: [], models: [] };
+    }
+
+    const seriesIds = series.map((seriesItem) => seriesItem.id);
+    const seriesMap = new Map(series.map((seriesItem) => [seriesItem.id, seriesItem]));
+
+    const modelsWithSlug = await supabase
+      .from("models")
+      .select("id, series_id, name, slug")
+      .in("series_id", seriesIds)
+      .order("name");
+
+    const modelRows =
+      !modelsWithSlug.error && modelsWithSlug.data
+        ? modelsWithSlug.data
+        : (
+            await supabase
+              .from("models")
+              .select("id, series_id, name")
+              .in("series_id", seriesIds)
+              .order("name")
+          ).data ?? [];
+
+    const models = modelRows
+      .map((modelItem) => {
+        const seriesItem = seriesMap.get(modelItem.series_id);
+        if (!seriesItem) {
+          return null;
+        }
+
+        return {
+          id: modelItem.id,
+          series_id: modelItem.series_id,
+          series_name: seriesItem.name,
+          series_slug: seriesItem.slug,
+          brand_name: seriesItem.brand_name,
+          brand_slug: seriesItem.brand_slug,
+          name: modelItem.name,
+          slug: ("slug" in modelItem && typeof modelItem.slug === "string" ? modelItem.slug : null) || slugify(modelItem.name) || modelItem.id,
+        } satisfies SearchModel;
+      })
+      .filter((item): item is SearchModel => item !== null);
+
+    return { brands, series, models };
+  } catch {
+    return { brands: [], series: [], models: [] };
+  }
+}, ["catalog-search-index"], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: ["catalog", "catalog-brands", "catalog-series", "catalog-models"],
 });

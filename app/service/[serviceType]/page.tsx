@@ -7,7 +7,7 @@ import { HowItWorks } from "@/src/components/next/HowItWorks";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ServiceLandingPage } from "@/src/components/next/ServiceLandingPage";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
-import { getBrandsForListing } from "@/src/lib/data/catalog";
+import { getBrandsForListing, getCatalogSearchIndex } from "@/src/lib/data/catalog";
 
 export const revalidate = 300;
 
@@ -54,13 +54,18 @@ export default async function ServicePage({ params }: PageProps) {
     notFound();
   }
 
-  const brands = await getBrandsForListing(config.listingType);
+  const [brands, searchIndex] = await Promise.all([getBrandsForListing(config.listingType), getCatalogSearchIndex(config.listingType)]);
 
   return (
     <div className="min-h-screen bg-background">
       <CatalogNavbar />
       <CatalogServiceTabs active={config.activeTab} />
-      <ServiceLandingPage serviceType={serviceType as "mobile-repair" | "laptop-repair"} brands={brands} />
+      <ServiceLandingPage
+        serviceType={serviceType as "mobile-repair" | "laptop-repair"}
+        brands={brands}
+        searchSeries={searchIndex.series}
+        searchModels={searchIndex.models}
+      />
       <HowItWorks />
       <TrustSignals />
       <HomepageFooter />

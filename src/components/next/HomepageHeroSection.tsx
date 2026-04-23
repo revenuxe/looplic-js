@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Search } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
+import { DeviceSearchBox } from "@/src/components/next/DeviceSearchBox";
+import type { CatalogBrand, SearchModel, SearchSeries } from "@/src/lib/data/catalog";
 import type { HomeBrand } from "@/src/lib/data/home";
 import { buildBrandRoute } from "@/src/lib/routes";
 
@@ -15,10 +15,17 @@ const stats = [
   { value: "30min", label: "Service" },
 ];
 
-export function HomepageHeroSection({ brands }: { brands: HomeBrand[] }) {
-  const [query, setQuery] = useState("");
-  const router = useRouter();
-
+export function HomepageHeroSection({
+  brands,
+  searchBrands,
+  searchSeries,
+  searchModels,
+}: {
+  brands: HomeBrand[];
+  searchBrands: CatalogBrand[];
+  searchSeries: SearchSeries[];
+  searchModels: SearchModel[];
+}) {
   return (
     <section className="relative overflow-hidden pb-6 pt-8 md:pb-20 md:pt-16">
       <div className="absolute inset-0 gradient-hero-bg" />
@@ -34,31 +41,14 @@ export function HomepageHeroSection({ brands }: { brands: HomeBrand[] }) {
             Find model, choose guard, and book a technician in under a minute.
           </p>
 
-          <div className="relative mt-6 px-1">
-            <div className="flex items-center rounded-2xl border-2 border-transparent bg-card shadow-card-brand transition-all duration-300 focus-within:border-primary/50 focus-within:shadow-search">
-              <Search className="ml-3.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search your phone model..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full bg-transparent px-3 py-3.5 text-[13px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
-              />
-              <button
-                onClick={() => router.push("/brands")}
-                className="mr-1.5 flex-shrink-0 rounded-xl gradient-brand p-2.5 transition-transform active:scale-95"
-                aria-label="Browse brands"
-              >
-                <ArrowRight className="h-4 w-4 text-primary-foreground" />
-              </button>
-            </div>
-            {query.trim().length > 1 ? (
-              <div className="absolute left-1 right-1 mt-2 rounded-xl border border-border bg-card p-4 text-left shadow-elevated-brand">
-                <p className="text-[13px] font-semibold text-foreground">Search results will be enabled in the next migration step.</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">For now, use the brand explorer to browse devices and services.</p>
-              </div>
-            ) : null}
-          </div>
+          <DeviceSearchBox
+            placeholder="Search your phone model..."
+            browseHref="/brands"
+            brands={searchBrands}
+            series={searchSeries}
+            models={searchModels}
+            mode="screen-guard"
+          />
         </div>
 
         <div className="mx-auto mt-8 max-w-md">

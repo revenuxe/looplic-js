@@ -1,16 +1,17 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Laptop, Search, Smartphone } from "lucide-react";
+import { ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
 
-import type { CatalogBrand } from "@/src/lib/data/catalog";
+import { DeviceSearchBox } from "@/src/components/next/DeviceSearchBox";
+import type { CatalogBrand, SearchModel, SearchSeries } from "@/src/lib/data/catalog";
 
 type ServiceLandingPageProps = {
   serviceType: "mobile-repair" | "laptop-repair";
   brands: CatalogBrand[];
+  searchSeries: SearchSeries[];
+  searchModels: SearchModel[];
 };
 
 const serviceConfig = {
@@ -40,21 +41,11 @@ const stats = [
   { value: "30min", label: "Service" },
 ];
 
-export function ServiceLandingPage({ serviceType, brands }: ServiceLandingPageProps) {
+export function ServiceLandingPage({ serviceType, brands, searchSeries, searchModels }: ServiceLandingPageProps) {
   const config = serviceConfig[serviceType];
-  const router = useRouter();
-  const [query, setQuery] = useState("");
 
   const heroBrands = brands.slice(0, 6);
   const moreBrands = brands.slice(6);
-
-  const queryHint = useMemo(() => {
-    if (query.trim().length < 2) {
-      return null;
-    }
-
-    return `Search-based model suggestions for ${config.title.toLowerCase()} will be enabled in the next enhancement. You can browse by brand right now.`;
-  }, [config.title, query]);
 
   const Icon = config.icon;
 
@@ -71,31 +62,14 @@ export function ServiceLandingPage({ serviceType, brands }: ServiceLandingPagePr
             </h1>
             <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{config.subtitle}</p>
 
-            <div className="relative mt-6 px-1">
-              <div className="flex items-center rounded-2xl border-2 border-transparent bg-card shadow-card-brand transition-all duration-300 focus-within:border-primary/50 focus-within:shadow-search">
-                <Search className="ml-3.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder={config.searchPlaceholder}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="w-full bg-transparent px-3 py-3.5 text-[13px] font-semibold text-foreground outline-none placeholder:text-muted-foreground"
-                />
-                <button
-                  onClick={() => router.push(config.allHref)}
-                  className="mr-1.5 flex-shrink-0 rounded-xl gradient-brand p-2.5 transition-transform active:scale-95"
-                  aria-label="Browse brands"
-                >
-                  <ArrowRight className="h-4 w-4 text-primary-foreground" />
-                </button>
-              </div>
-
-              {queryHint ? (
-                <div className="absolute left-1 right-1 mt-2 rounded-xl border border-border bg-card p-4 text-left shadow-elevated-brand">
-                  <p className="text-[13px] font-semibold text-foreground">{queryHint}</p>
-                </div>
-              ) : null}
-            </div>
+            <DeviceSearchBox
+              placeholder={config.searchPlaceholder}
+              browseHref={config.allHref}
+              brands={brands}
+              series={searchSeries}
+              models={searchModels}
+              mode={serviceType}
+            />
           </div>
 
           <div className="mx-auto mt-8 max-w-md">
