@@ -7,9 +7,9 @@ import { HowItWorks } from "@/src/components/next/HowItWorks";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ServiceLandingPage } from "@/src/components/next/ServiceLandingPage";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
-import { getBrandsForListing } from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS, getBrandsForListing } from "@/src/lib/data/catalog";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{

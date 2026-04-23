@@ -5,9 +5,10 @@ import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { SeriesCatalogPage } from "@/src/components/next/SeriesCatalogPage";
-import { getBrandBySlug, getSeriesForBrand } from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS, getSeriesForBrand } from "@/src/lib/data/catalog";
+import { resolveBrandPageData } from "@/src/lib/data/catalog-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{
@@ -17,7 +18,7 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { brandSlug } = await params;
-  const brand = await getBrandBySlug(brandSlug, "mobile");
+  const { brand } = await resolveBrandPageData(brandSlug, "mobile");
 
   if (!brand) {
     return {
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BrandPage({ params }: PageProps) {
   const { brandSlug } = await params;
-  const brand = await getBrandBySlug(brandSlug, "mobile");
+  const { brand } = await resolveBrandPageData(brandSlug, "mobile");
 
   if (!brand) {
     notFound();

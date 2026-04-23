@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import { HomepageView } from "@/src/components/next/HomepageView";
-import { getHomepageBrands } from "@/src/lib/data/home";
+import { getHomepageBrands, HOME_REVALIDATE_SECONDS } from "@/src/lib/data/home";
 
-export const dynamic = "force-dynamic";
+export const revalidate = HOME_REVALIDATE_SECONDS;
 
 export const metadata: Metadata = {
   title: "Doorstep Screen Guard Installation",

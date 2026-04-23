@@ -5,9 +5,10 @@ import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ModelsCatalogPage } from "@/src/components/next/ModelsCatalogPage";
-import { getBrandBySlug, getModelsForSeries, getSeriesBySlug } from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS, getModelsForSeries } from "@/src/lib/data/catalog";
+import { resolveSeriesPageData } from "@/src/lib/data/catalog-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{
@@ -40,14 +41,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand, series } = await resolveSeriesPageData(brandSlug, seriesSlug, config.listingType);
   if (!brand) {
     return {
       title: "Service Series Detail",
     };
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     return {
       title: `${brand.name} Series`,
@@ -68,12 +67,10 @@ export default async function ServiceSeriesPage({ params }: PageProps) {
     notFound();
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand, series } = await resolveSeriesPageData(brandSlug, seriesSlug, config.listingType);
   if (!brand) {
     notFound();
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     notFound();
   }

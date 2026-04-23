@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
-import { getBrandBySlug, getModelBySlug, getModelScreenGuards, getSeriesBySlug } from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS, getModelScreenGuards } from "@/src/lib/data/catalog";
+import { resolveModelPageData } from "@/src/lib/data/catalog-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{
@@ -16,18 +17,14 @@ type PageProps = {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { brandSlug, seriesSlug, modelSlug } = await params;
-  const brand = await getBrandBySlug(brandSlug, "mobile");
+  const { brand, series, model } = await resolveModelPageData(brandSlug, seriesSlug, modelSlug, "mobile");
 
   if (!brand) {
     return { title: "Model Booking" };
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     return { title: `${brand.name} Booking` };
   }
-
-  const model = await getModelBySlug(series.id, modelSlug);
   if (!model) {
     return { title: `${brand.name} ${series.name}` };
   }
@@ -40,18 +37,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ModelPage({ params }: PageProps) {
   const { brandSlug, seriesSlug, modelSlug } = await params;
-  const brand = await getBrandBySlug(brandSlug, "mobile");
+  const { brand, series, model } = await resolveModelPageData(brandSlug, seriesSlug, modelSlug, "mobile");
 
   if (!brand) {
     notFound();
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     notFound();
   }
-
-  const model = await getModelBySlug(series.id, modelSlug);
   if (!model) {
     notFound();
   }

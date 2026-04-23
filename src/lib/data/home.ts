@@ -12,6 +12,8 @@ export type HomeBrand = {
   image_url: string | null;
 };
 
+export const HOME_REVALIDATE_SECONDS = 300;
+
 const fallbackBrands: HomeBrand[] = [
   { id: "apple", slug: "apple", name: "Apple", letter: "A", gradient: "from-gray-700 to-gray-900", image_url: null },
   { id: "samsung", slug: "samsung", name: "Samsung", letter: "S", gradient: "from-blue-500 to-blue-700", image_url: null },
@@ -73,6 +75,6 @@ export const getHomepageBrands = unstable_cache(async (): Promise<HomeBrand[]> =
     return fallbackBrands;
   }
 }, ["homepage-brands"], {
-  revalidate: 300,
+  revalidate: HOME_REVALIDATE_SECONDS,
   tags: ["catalog", "catalog-brands", "homepage-brands"],
 });

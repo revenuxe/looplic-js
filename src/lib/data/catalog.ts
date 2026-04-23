@@ -61,7 +61,7 @@ const fallbackBrands: CatalogBrand[] = [
   { id: "lenovo", name: "Lenovo", slug: "lenovo", letter: "L", gradient: "from-red-500 to-rose-600", image_url: null, service_type: "laptop" },
 ];
 
-const CATALOG_REVALIDATE_SECONDS = 300;
+export const CATALOG_REVALIDATE_SECONDS = 300;
 
 async function queryBrands(serviceType: "mobile" | "laptop") {
   const supabase = createPublicClient();
@@ -110,11 +110,27 @@ export const getBrandsForListing = unstable_cache(async (serviceType: "mobile" |
 export const getBrandBySlug = unstable_cache(
   async (brandSlug: string, serviceType?: "mobile" | "laptop"): Promise<CatalogBrand | null> => {
     try {
-      const list = await getBrandsForListing(serviceType ?? "mobile");
-      const directMatch = list.find((brand) => brand.slug === brandSlug);
+      const resolvedServiceType = serviceType ?? "mobile";
+      const supabase = createPublicClient();
+      const directMatch = await supabase
+        .from("brands")
+        .select("id, name, slug, letter, gradient, image_url, service_type")
+        .eq("service_type", resolvedServiceType)
+        .eq("slug", brandSlug)
+        .maybeSingle();
 
-      if (directMatch) {
-        return directMatch;
+      if (!directMatch.error && directMatch.data) {
+        return {
+          ...directMatch.data,
+          slug: directMatch.data.slug || slugify(directMatch.data.name) || directMatch.data.id,
+        };
+      }
+
+      const list = await getBrandsForListing(serviceType ?? "mobile");
+      const listDirectMatch = list.find((brand) => brand.slug === brandSlug);
+
+      if (listDirectMatch) {
+        return listDirectMatch;
       }
 
       const fallbackMatch = list.find((brand) => slugify(brand.name) === brandSlug);
@@ -170,11 +186,26 @@ export const getSeriesForBrand = unstable_cache(async (brandId: string): Promise
 
 export const getSeriesBySlug = unstable_cache(async (brandId: string, seriesSlug: string): Promise<CatalogSeries | null> => {
   try {
-    const list = await getSeriesForBrand(brandId);
-    const directMatch = list.find((series) => series.slug === seriesSlug);
+    const supabase = createPublicClient();
+    const directMatch = await supabase
+      .from("series")
+      .select("id, brand_id, name, slug, image_url")
+      .eq("brand_id", brandId)
+      .eq("slug", seriesSlug)
+      .maybeSingle();
 
-    if (directMatch) {
-      return directMatch;
+    if (!directMatch.error && directMatch.data) {
+      return {
+        ...directMatch.data,
+        slug: directMatch.data.slug || slugify(directMatch.data.name) || directMatch.data.id,
+      };
+    }
+
+    const list = await getSeriesForBrand(brandId);
+    const listDirectMatch = list.find((series) => series.slug === seriesSlug);
+
+    if (listDirectMatch) {
+      return listDirectMatch;
     }
 
     const fallbackMatch = list.find((series) => slugify(series.name) === seriesSlug);
@@ -227,11 +258,26 @@ export const getModelsForSeries = unstable_cache(async (seriesId: string): Promi
 
 export const getModelBySlug = unstable_cache(async (seriesId: string, modelSlug: string): Promise<CatalogModel | null> => {
   try {
-    const list = await getModelsForSeries(seriesId);
-    const directMatch = list.find((model) => model.slug === modelSlug);
+    const supabase = createPublicClient();
+    const directMatch = await supabase
+      .from("models")
+      .select("id, series_id, name, slug, image_url")
+      .eq("series_id", seriesId)
+      .eq("slug", modelSlug)
+      .maybeSingle();
 
-    if (directMatch) {
-      return directMatch;
+    if (!directMatch.error && directMatch.data) {
+      return {
+        ...directMatch.data,
+        slug: directMatch.data.slug || slugify(directMatch.data.name) || directMatch.data.id,
+      };
+    }
+
+    const list = await getModelsForSeries(seriesId);
+    const listDirectMatch = list.find((model) => model.slug === modelSlug);
+
+    if (listDirectMatch) {
+      return listDirectMatch;
     }
 
     const fallbackMatch = list.find((model) => slugify(model.name) === modelSlug);

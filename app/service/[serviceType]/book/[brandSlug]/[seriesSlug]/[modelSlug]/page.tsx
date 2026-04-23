@@ -2,15 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
-import {
-  getBrandBySlug,
-  getModelBySlug,
-  getRepairCategories,
-  getRepairSubcategories,
-  getSeriesBySlug,
-} from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS } from "@/src/lib/data/catalog";
+import { getRepairCatalogData, resolveModelPageData } from "@/src/lib/data/catalog-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{
@@ -42,17 +37,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Service Booking" };
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand, series, model } = await resolveModelPageData(brandSlug, seriesSlug, modelSlug, config.listingType);
   if (!brand) {
     return { title: "Service Booking" };
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     return { title: `${brand.name} Booking` };
   }
-
-  const model = await getModelBySlug(series.id, modelSlug);
   if (!model) {
     return { title: `${brand.name} ${series.name}` };
   }
@@ -71,23 +62,17 @@ export default async function ServiceBookingPage({ params }: PageProps) {
     notFound();
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand, series, model } = await resolveModelPageData(brandSlug, seriesSlug, modelSlug, config.listingType);
   if (!brand) {
     notFound();
   }
-
-  const series = await getSeriesBySlug(brand.id, seriesSlug);
   if (!series) {
     notFound();
   }
-
-  const model = await getModelBySlug(series.id, modelSlug);
   if (!model) {
     notFound();
   }
-
-  const repairCategories = await getRepairCategories(config.listingType);
-  const repairSubcategories = await getRepairSubcategories(repairCategories.map((category) => category.id));
+  const { repairCategories, repairSubcategories } = await getRepairCatalogData(config.listingType);
 
   return (
     <BookingPageShell

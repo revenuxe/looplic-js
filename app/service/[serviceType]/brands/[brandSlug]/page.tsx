@@ -5,9 +5,10 @@ import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { SeriesCatalogPage } from "@/src/components/next/SeriesCatalogPage";
-import { getBrandBySlug, getSeriesForBrand } from "@/src/lib/data/catalog";
+import { CATALOG_REVALIDATE_SECONDS, getSeriesForBrand } from "@/src/lib/data/catalog";
+import { resolveBrandPageData } from "@/src/lib/data/catalog-page";
 
-export const dynamic = "force-dynamic";
+export const revalidate = CATALOG_REVALIDATE_SECONDS;
 
 type PageProps = {
   params: Promise<{
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand } = await resolveBrandPageData(brandSlug, config.listingType);
 
   if (!brand) {
     return {
@@ -61,7 +62,7 @@ export default async function ServiceBrandPage({ params }: PageProps) {
     notFound();
   }
 
-  const brand = await getBrandBySlug(brandSlug, config.listingType);
+  const { brand } = await resolveBrandPageData(brandSlug, config.listingType);
 
   if (!brand) {
     notFound();
