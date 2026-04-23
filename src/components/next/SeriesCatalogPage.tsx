@@ -2,6 +2,7 @@ import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { CatalogPrefetchLink } from "@/src/components/next/CatalogPrefetchLink";
 import type { CatalogBrand, CatalogSeries } from "@/src/lib/data/catalog";
 
 type SeriesCatalogPageProps = {
@@ -68,9 +69,10 @@ export function SeriesCatalogPage({
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {seriesList.map((series) => (
-              <Link
+              <CatalogPrefetchLink
                 key={series.id}
                 href={`${seriesPathPrefix}/${series.slug}`}
+                eagerPrefetch
                 className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3">
@@ -80,7 +82,7 @@ export function SeriesCatalogPage({
                   <span className="text-sm font-bold text-foreground">{series.name}</span>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
-              </Link>
+              </CatalogPrefetchLink>
             ))}
           </div>
         )}

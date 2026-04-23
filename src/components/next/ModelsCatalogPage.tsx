@@ -2,6 +2,7 @@ import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { CatalogPrefetchLink } from "@/src/components/next/CatalogPrefetchLink";
 import type { CatalogBrand, CatalogModel, CatalogSeries } from "@/src/lib/data/catalog";
 
 type ModelsCatalogPageProps = {
@@ -74,9 +75,10 @@ export function ModelsCatalogPage({
         ) : (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             {models.map((model) => (
-              <Link
+              <CatalogPrefetchLink
                 key={model.id}
                 href={`${modelPathPrefix}/${model.slug}`}
+                eagerPrefetch
                 className="group flex flex-col items-center gap-2 rounded-2xl border border-border bg-card px-3 py-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
               >
                 {model.image_url ? (
@@ -96,7 +98,7 @@ export function ModelsCatalogPage({
                   <span className="flex-1 truncate text-center text-xs font-bold text-foreground">{model.name}</span>
                   <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
                 </div>
-              </Link>
+              </CatalogPrefetchLink>
             ))}
           </div>
         )}

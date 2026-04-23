@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { CatalogPrefetchLink } from "@/src/components/next/CatalogPrefetchLink";
 import type { CatalogBrand } from "@/src/lib/data/catalog";
 
 type BrandsCatalogPageProps = {
@@ -70,9 +71,10 @@ export function BrandsCatalogPage({
         ) : (
           <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {filteredBrands.map((brand) => (
-              <Link
+              <CatalogPrefetchLink
                 key={brand.id}
                 href={`${servicePathPrefix}/${brand.slug}`}
+                eagerPrefetch={!search}
                 className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card px-2 py-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-95"
               >
                 {brand.image_url ? (
@@ -89,7 +91,7 @@ export function BrandsCatalogPage({
                   </div>
                 )}
                 <span className="text-center text-xs font-bold text-foreground">{brand.name}</span>
-              </Link>
+              </CatalogPrefetchLink>
             ))}
           </div>
         )}
