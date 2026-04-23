@@ -469,33 +469,33 @@ export function AccountPageClient() {
   return (
     <main className="flex-1 bg-[radial-gradient(circle_at_top,_hsl(211_100%_50%_/_0.14),_transparent_30%),radial-gradient(circle_at_80%_8%,_hsl(165_100%_42%_/_0.14),_transparent_26%),linear-gradient(180deg,_rgba(255,255,255,0)_0%,_rgba(248,250,252,0.92)_100%)]">
       <div className="container max-w-6xl px-3 py-3 sm:px-6 sm:py-6 lg:py-8">
-        <section className="overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-elevated-brand sm:rounded-[28px]">
-          <div className="border-b border-white/15 gradient-brand px-4 py-4 text-white sm:px-6 sm:py-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <section className="overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-elevated-brand sm:rounded-[26px]">
+          <div className="border-b border-white/15 gradient-brand px-4 py-3.5 text-white sm:px-6 sm:py-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="max-w-2xl min-w-0">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/85 sm:mb-4 sm:text-[11px] sm:tracking-[0.2em]">
-                  <ShieldCheck className="h-3.5 w-3.5" />
+                <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/85 sm:mb-3 sm:text-[11px] sm:tracking-[0.18em]">
+                  <ShieldCheck className="h-3 w-3" />
                   Orders Dashboard
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-sm">
-                    <User className="h-5 w-5 text-white" />
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 shadow-sm">
+                    <User className="h-4.5 w-4.5 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="truncate text-xl font-black tracking-tight sm:text-2xl md:text-3xl">{customerName}</h1>
-                    <p className="truncate text-sm text-white/70">{user.email}</p>
+                    <h1 className="truncate text-lg font-black tracking-tight sm:text-xl md:text-[1.65rem]">{customerName}</h1>
+                    <p className="truncate text-[13px] text-white/70">{user.email}</p>
                   </div>
                 </div>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-white/85 sm:mt-4">
+                <p className="mt-2.5 max-w-lg text-[13px] leading-5 text-white/80 sm:mt-3 sm:text-sm">
                   Track bookings, update your address, and act on pending requests quickly.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="min-w-0 flex-1 rounded-2xl border border-white/20 bg-white/15 px-4 py-3 text-sm sm:flex-none">
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-white/70 sm:text-xs sm:tracking-[0.22em]">Primary contact</div>
-                  <div className="mt-1 font-semibold text-white">{profile?.phone || "Add your phone number"}</div>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/15 px-3 py-2.5 text-sm sm:flex-none sm:min-w-[220px]">
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-white/70 sm:text-[11px] sm:tracking-[0.2em]">Primary contact</div>
+                  <div className="mt-1 truncate text-[13px] font-semibold text-white sm:text-sm">{profile?.phone || "Add your phone number"}</div>
                 </div>
-                <Button variant="secondary" size="sm" onClick={handleSignOut} className="rounded-xl border border-white/20 bg-white/15 text-white hover:bg-white/20 hover:text-white">
+                <Button variant="secondary" size="sm" onClick={handleSignOut} className="h-10 rounded-xl border border-white/20 bg-white/15 px-3 text-white hover:bg-white/20 hover:text-white">
                   <LogOut className="h-4 w-4" />
                   Logout
                 </Button>
