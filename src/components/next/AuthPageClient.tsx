@@ -9,6 +9,17 @@ import { toast } from "sonner";
 import logo from "@/assets/looplic-logo.webp";
 import { createClient } from "@/src/lib/supabase/client";
 
+const AUTH_REDIRECT_STORAGE_KEY = "looplic_auth_redirect";
+const AUTH_REDIRECT_COOKIE_KEY = "looplic-auth-redirect";
+
+function sanitizeRedirect(value: string | null | undefined) {
+  if (!value || !value.startsWith("/")) {
+    return "/";
+  }
+
+  return value;
+}
+
 export function AuthPageClient() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get("mode") === "signup" ? "signup" : "login";
@@ -21,7 +32,8 @@ export function AuthPageClient() {
   const [submitting, setSubmitting] = useState<"email" | "google" | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
-  const redirect = searchParams.get("redirect") || "/";
+  const redirectParam = searchParams.get("redirect");
+  const redirect = sanitizeRedirect(redirectParam);
   const supabase = createClient();
   const callbackUrl = useMemo(() => {
     if (typeof window === "undefined") {
@@ -31,6 +43,38 @@ export function AuthPageClient() {
     const callback = new URL("/auth/callback", window.location.origin);
     callback.searchParams.set("next", redirect);
     return callback.toString();
+  }, [redirect]);
+
+  function persistRedirect(target: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const safeTarget = sanitizeRedirect(target);
+    window.sessionStorage.setItem(AUTH_REDIRECT_STORAGE_KEY, safeTarget);
+    document.cookie = `${AUTH_REDIRECT_COOKIE_KEY}=${encodeURIComponent(safeTarget)}; Path=/; Max-Age=600; SameSite=Lax`;
+  }
+
+  function clearPersistedRedirect() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.sessionStorage.removeItem(AUTH_REDIRECT_STORAGE_KEY);
+    document.cookie = `${AUTH_REDIRECT_COOKIE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+  }
+
+  function resolveRedirectTarget() {
+    if (typeof window === "undefined") {
+      return redirect;
+    }
+
+    const storedRedirect = window.sessionStorage.getItem(AUTH_REDIRECT_STORAGE_KEY);
+    return redirectParam ? redirect : sanitizeRedirect(storedRedirect);
+  }
+
+  useEffect(() => {
+    persistRedirect(redirect);
   }, [redirect]);
 
   useEffect(() => {
@@ -46,7 +90,9 @@ export function AuthPageClient() {
       }
 
       if (session?.user) {
-        router.replace(redirect);
+        const target = resolveRedirectTarget();
+        clearPersistedRedirect();
+        router.replace(target);
         router.refresh();
         return;
       }
@@ -64,7 +110,9 @@ export function AuthPageClient() {
       }
 
       if (session?.user) {
-        router.replace(redirect);
+        const target = resolveRedirectTarget();
+        clearPersistedRedirect();
+        router.replace(target);
         router.refresh();
         return;
       }
@@ -94,6 +142,7 @@ export function AuthPageClient() {
       return;
     }
 
+    persistRedirect(redirect);
     setSubmitting("google");
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -124,6 +173,7 @@ export function AuthPageClient() {
       return;
     }
 
+    persistRedirect(redirect);
     setSubmitting("email");
 
     if (mode === "login") {
@@ -139,7 +189,8 @@ export function AuthPageClient() {
       }
 
       toast.success("Welcome back!");
-      router.replace(redirect);
+      clearPersistedRedirect();
+      router.replace(resolveRedirectTarget());
       router.refresh();
       setSubmitting(null);
       return;
@@ -173,7 +224,12 @@ export function AuthPageClient() {
     }
 
     toast.success(data.session ? "Account created!" : "Account created. Verify your email to complete sign in.");
-    router.replace(data.session ? redirect : "/");
+    if (data.session) {
+      clearPersistedRedirect();
+      router.replace(resolveRedirectTarget());
+    } else {
+      router.replace("/");
+    }
     router.refresh();
     setSubmitting(null);
   }
