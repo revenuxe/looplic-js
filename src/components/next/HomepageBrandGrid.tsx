@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import type { HomeBrand } from "@/src/lib/data/home";
+import type { CatalogBrand } from "@/src/lib/data/catalog";
 import { buildBrandRoute } from "@/src/lib/routes";
 
-export function HomepageBrandGrid({ brands }: { brands: HomeBrand[] }) {
+export function HomepageBrandGrid({ brands }: { brands: CatalogBrand[] }) {
   const [showAll, setShowAll] = useState(false);
   const [visibleCount, setVisibleCount] = useState(15);
 

@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree, GripVertical
 } from "lucide-react";
+import { slugify } from "@/src/lib/slug";
 import ImageUpload from "./ImageUpload";
 
 const supabase = createClient() as any;
@@ -49,6 +50,27 @@ const revalidateBrandPages = async (serviceType: string) => {
     serviceType === "laptop"
       ? ["/service/laptop-repair", "/service/laptop-repair/brands"]
       : ["/", "/brands", "/service/mobile-repair", "/service/mobile-repair/brands"];
+  const pagePaths =
+    serviceType === "laptop"
+      ? [
+          "/service/[serviceType]",
+          "/service/[serviceType]/brands",
+          "/service/[serviceType]/brands/[brandSlug]",
+          "/service/[serviceType]/brands/[brandSlug]/[seriesSlug]",
+          "/service/[serviceType]/book/[brandSlug]/[seriesSlug]/[modelSlug]",
+        ]
+      : [
+          "/",
+          "/brands",
+          "/brands/[brandSlug]",
+          "/brands/[brandSlug]/[seriesSlug]",
+          "/brands/[brandSlug]/[seriesSlug]/[modelSlug]",
+          "/service/[serviceType]",
+          "/service/[serviceType]/brands",
+          "/service/[serviceType]/brands/[brandSlug]",
+          "/service/[serviceType]/brands/[brandSlug]/[seriesSlug]",
+          "/service/[serviceType]/book/[brandSlug]/[seriesSlug]/[modelSlug]",
+        ];
 
   try {
     await fetch("/api/revalidate", {
@@ -58,7 +80,8 @@ const revalidateBrandPages = async (serviceType: string) => {
       },
       body: JSON.stringify({
         paths,
-        tags: ["catalog", "catalog-brands", "homepage-brands"],
+        pagePaths,
+        tags: ["catalog", "catalog-brands", "catalog-series", "catalog-models", "homepage-brands"],
       }),
     });
   } catch {
@@ -97,8 +120,13 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleAdd = async () => {
     if (!name.trim()) return;
     setSaving(true);
+    const trimmedName = name.trim();
     const { data, error } = await supabase.from("brands").insert({
-      name: name.trim(), letter: name.charAt(0).toUpperCase(), gradient: "from-blue-500 to-cyan-500", service_type: serviceType,
+      name: trimmedName,
+      slug: slugify(trimmedName),
+      letter: trimmedName.charAt(0).toUpperCase(),
+      gradient: "from-blue-500 to-cyan-500",
+      service_type: serviceType,
     } as any).select().single();
     if (!error && data) {
       let finalUrl = imageUrl;
@@ -125,7 +153,8 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleEdit = async () => {
     if (!editBrand || !editName.trim()) return;
     setEditSaving(true);
-    const updates: any = { name: editName.trim() };
+    const trimmedName = editName.trim();
+    const updates: any = { name: trimmedName, slug: slugify(trimmedName), letter: trimmedName.charAt(0).toUpperCase() };
     if (editImageUrl) updates.image_url = editImageUrl;
     else if (editImage) {
       const url = await uploadServiceImage("brand-images", editBrand.id, editImage);
@@ -322,7 +351,8 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleAdd = async () => {
     if (!name.trim() || !selectedBrand) return;
     setSaving(true);
-    const insertData: any = { brand_id: selectedBrand, name: name.trim() };
+    const trimmedName = name.trim();
+    const insertData: any = { brand_id: selectedBrand, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
     const { data, error } = await (supabase.from("series") as any).insert(insertData).select().single();
     if (!error && data && addImage) {
@@ -340,7 +370,8 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleEdit = async () => {
     if (!editItem || !editName.trim()) return;
     setEditSaving(true);
-    const updates: any = { name: editName.trim() };
+    const trimmedName = editName.trim();
+    const updates: any = { name: trimmedName, slug: slugify(trimmedName) };
     if (editImageUrl) updates.image_url = editImageUrl;
     else if (editImage) {
       const url = await uploadServiceImage("service-images", `series-${editItem.id}`, editImage);
@@ -459,7 +490,8 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleAdd = async () => {
     if (!name.trim() || !selectedSeries) return;
     setSaving(true);
-    const insertData: any = { series_id: selectedSeries, name: name.trim() };
+    const trimmedName = name.trim();
+    const insertData: any = { series_id: selectedSeries, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
     const { data, error } = await (supabase.from("models") as any).insert(insertData).select().single();
     if (!error && data && addImage) {
@@ -477,7 +509,8 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const handleEdit = async () => {
     if (!editItem || !editName.trim()) return;
     setEditSaving(true);
-    const updates: any = { name: editName.trim() };
+    const trimmedName = editName.trim();
+    const updates: any = { name: trimmedName, slug: slugify(trimmedName) };
     if (editImageUrl) updates.image_url = editImageUrl;
     else if (editImage) {
       const url = await uploadServiceImage("service-images", `model-${editItem.id}`, editImage);

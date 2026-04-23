@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 
 import { HomepageView } from "@/src/components/next/HomepageView";
-import { getCatalogSearchIndex } from "@/src/lib/data/catalog";
-import { getHomepageBrands } from "@/src/lib/data/home";
+import { getBrandsForListing, getCatalogSearchIndex } from "@/src/lib/data/catalog";
 
 export const revalidate = 300;
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [brands, searchIndex] = await Promise.all([getHomepageBrands(), getCatalogSearchIndex("mobile")]);
+  const [brands, searchIndex] = await Promise.all([getBrandsForListing("mobile"), getCatalogSearchIndex("mobile")]);
 
   return <HomepageView brands={brands} searchBrands={searchIndex.brands} searchSeries={searchIndex.series} searchModels={searchIndex.models} />;
 }

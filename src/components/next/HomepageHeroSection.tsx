@@ -6,7 +6,6 @@ import Link from "next/link";
 
 import { DeviceSearchBox } from "@/src/components/next/DeviceSearchBox";
 import type { CatalogBrand, SearchModel, SearchSeries } from "@/src/lib/data/catalog";
-import type { HomeBrand } from "@/src/lib/data/home";
 import { buildBrandRoute } from "@/src/lib/routes";
 
 const stats = [
@@ -21,7 +20,7 @@ export function HomepageHeroSection({
   searchSeries,
   searchModels,
 }: {
-  brands: HomeBrand[];
+  brands: CatalogBrand[];
   searchBrands: CatalogBrand[];
   searchSeries: SearchSeries[];
   searchModels: SearchModel[];

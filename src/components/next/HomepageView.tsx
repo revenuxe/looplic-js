@@ -7,7 +7,6 @@ import { HomepageServiceTabs } from "@/src/components/next/HomepageServiceTabs";
 import { ScreenGuardTypes } from "@/src/components/next/ScreenGuardTypes";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
 import type { CatalogBrand, SearchModel, SearchSeries } from "@/src/lib/data/catalog";
-import type { HomeBrand } from "@/src/lib/data/home";
 
 export function HomepageView({
   brands,
@@ -15,7 +14,7 @@ export function HomepageView({
   searchSeries,
   searchModels,
 }: {
-  brands: HomeBrand[];
+  brands: CatalogBrand[];
   searchBrands: CatalogBrand[];
   searchSeries: SearchSeries[];
   searchModels: SearchModel[];
