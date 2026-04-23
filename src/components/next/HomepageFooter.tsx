@@ -1,56 +1,69 @@
-import { Instagram, Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, MessageCircle, Phone } from "lucide-react";
 import Link from "next/link";
 
 import logo from "@/assets/looplic-logo.webp";
+import { companyName, footerLinks, supportEmail, supportPhone, supportPhoneDisplay, whatsappUrl } from "@/src/lib/company";
 
 export function HomepageFooter() {
   return (
     <footer id="contact" className="border-t border-border bg-card py-8">
-      <div className="container">
-        <div className="flex flex-col gap-6">
-          <div className="text-center">
-            <img src={logo.src} alt="Looplic" className="mx-auto mb-2 h-7" />
-            <p className="text-[11px] text-muted-foreground">India's trusted doorstep screen guard service</p>
-          </div>
+      <div className="container max-w-6xl px-4 sm:px-6">
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr_0.9fr]">
+            <div className="text-center md:text-left">
+              <img src={logo.src} alt="Looplic" className="mx-auto mb-3 h-7 md:mx-0" />
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                Fast doorstep support for screen guards and repair bookings, backed by clear policies, responsive help, and dependable customer care.
+              </p>
+            </div>
 
-          <div className="flex justify-center gap-6 text-xs font-semibold text-muted-foreground">
-            <Link href="/brands" className="transition-colors hover:text-foreground">
-              Services
-            </Link>
-            <a href="#how-it-works" className="transition-colors hover:text-foreground">
-              How It Works
-            </a>
-            <a href="#contact" className="transition-colors hover:text-foreground">
-              Contact
-            </a>
-            <Link href="/brands" className="transition-colors hover:text-foreground">
-              FAQ
-            </Link>
-          </div>
+            <div className="text-center md:text-left">
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Menu</div>
+              <div className="mt-3 grid gap-2 text-sm font-semibold">
+                <Link href="/" className="transition-colors hover:text-foreground">
+                  Home
+                </Link>
+                <Link href="/brands" className="transition-colors hover:text-foreground">
+                  Services
+                </Link>
+                {footerLinks.map((link) => (
+                  <Link key={link.href} href={link.href} className="transition-colors hover:text-foreground">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
 
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href="tel:+919876543210" className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground">
-              <Phone className="h-3 w-3" /> +91 98765 43210
-            </a>
-            <a href="mailto:hello@looplic.com" className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground">
-              <Mail className="h-3 w-3" /> hello@looplic.com
-            </a>
+            <div className="text-center md:text-left">
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Support</div>
+              <div className="mt-3 flex flex-col gap-2">
+                <a href={`tel:+91${supportPhone}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-sm font-semibold text-foreground md:justify-start">
+                  <Phone className="h-4 w-4" /> {supportPhoneDisplay}
+                </a>
+                <a href={`mailto:${supportEmail}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-sm font-semibold text-foreground md:justify-start">
+                  <Mail className="h-4 w-4" /> {supportEmail}
+                </a>
+                <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 md:justify-start">
+                  <MessageCircle className="h-4 w-4" /> WhatsApp support
+                </a>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-center gap-3">
-            {[Instagram, MessageCircle].map((Icon, index) => (
-              <a
-                key={index}
-                href="#contact"
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-              >
-                <Icon className="h-4 w-4" />
-              </a>
-            ))}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 transition-all hover:bg-emerald-100"
+              aria-label="WhatsApp support"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </a>
           </div>
 
           <div className="border-t border-border pt-4 text-center">
-            <p className="text-[10px] text-muted-foreground">© {new Date().getFullYear()} Looplic. All rights reserved.</p>
+            <p className="text-[10px] text-muted-foreground">Copyright {new Date().getFullYear()} {companyName}. All rights reserved.</p>
           </div>
         </div>
       </div>

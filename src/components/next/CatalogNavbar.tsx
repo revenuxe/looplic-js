@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, User, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -24,9 +24,12 @@ export function CatalogNavbar() {
           <Link href="/service/mobile-repair" className="transition-colors hover:text-foreground">
             Repairs
           </Link>
-          <a href="#contact" className="transition-colors hover:text-foreground">
+          <Link href="/about-us" className="transition-colors hover:text-foreground">
+            About
+          </Link>
+          <Link href="/contact-us" className="transition-colors hover:text-foreground">
             Contact
-          </a>
+          </Link>
           <AuthHeaderActions />
         </div>
 
@@ -47,9 +50,12 @@ export function CatalogNavbar() {
             <Link href="/service/mobile-repair" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               Repairs
             </Link>
-            <a href="#contact" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
+            <Link href="/about-us" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
+              About
+            </Link>
+            <Link href="/contact-us" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               Contact
-            </a>
+            </Link>
             <div className="mt-2">
               <AuthHeaderActions />
             </div>
