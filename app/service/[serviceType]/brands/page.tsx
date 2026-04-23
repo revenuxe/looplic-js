@@ -5,9 +5,9 @@ import { BrandsCatalogPage } from "@/src/components/next/BrandsCatalogPage";
 import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
-import { CATALOG_REVALIDATE_SECONDS, getBrandsForListing } from "@/src/lib/data/catalog";
+import { getBrandsForListing } from "@/src/lib/data/catalog";
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{

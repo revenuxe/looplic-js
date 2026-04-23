@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
-import { CATALOG_REVALIDATE_SECONDS } from "@/src/lib/data/catalog";
 import { getRepairCatalogData, resolveModelPageData } from "@/src/lib/data/catalog-page";
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{

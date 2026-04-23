@@ -5,10 +5,10 @@ import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { SeriesCatalogPage } from "@/src/components/next/SeriesCatalogPage";
-import { CATALOG_REVALIDATE_SECONDS, getSeriesForBrand } from "@/src/lib/data/catalog";
+import { getSeriesForBrand } from "@/src/lib/data/catalog";
 import { resolveBrandPageData } from "@/src/lib/data/catalog-page";
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 type PageProps = {
   params: Promise<{
