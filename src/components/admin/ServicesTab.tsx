@@ -12,7 +12,7 @@ import ImageUpload from "./ImageUpload";
 
 const supabase = createClient() as any;
 
-type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
+type Brand = { id: string; name: string; slug?: string | null; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
 type Series = { id: string; brand_id: string; name: string; image_url?: string | null };
 type Model = { id: string; series_id: string; name: string; image_url?: string | null };
 type Guard = { id: string; model_id: string; guard_type: string; price: number; image_url?: string | null };
@@ -89,7 +89,7 @@ const uploadServiceImage = async (bucket: string, id: string, file: File) => {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 };
 
-const hasMissingSlugColumnError = (error: { message?: string } | null | undefined, table: "series" | "models") =>
+const hasMissingSlugColumnError = (error: { message?: string } | null | undefined, table: "brands" | "series" | "models") =>
   Boolean(error?.message && error.message.includes(`Could not find the 'slug' column of '${table}' in the schema cache`));
 
 const stripSlugField = <T extends Record<string, unknown>>(payload: T) => {
@@ -97,7 +97,7 @@ const stripSlugField = <T extends Record<string, unknown>>(payload: T) => {
   return rest;
 };
 
-const insertWithOptionalSlug = async (table: "series" | "models", payload: Record<string, unknown>) => {
+const insertWithOptionalSlug = async (table: "brands" | "series" | "models", payload: Record<string, unknown>) => {
   const primaryAttempt = await (supabase.from(table) as any).insert(payload).select().single();
   if (!hasMissingSlugColumnError(primaryAttempt.error, table)) {
     return primaryAttempt;
@@ -106,13 +106,41 @@ const insertWithOptionalSlug = async (table: "series" | "models", payload: Recor
   return (supabase.from(table) as any).insert(stripSlugField(payload)).select().single();
 };
 
-const updateWithOptionalSlug = async (table: "series" | "models", id: string, payload: Record<string, unknown>) => {
+const updateWithOptionalSlug = async (table: "brands" | "series" | "models", id: string, payload: Record<string, unknown>) => {
   const primaryAttempt = await (supabase.from(table) as any).update(payload).eq("id", id);
   if (!hasMissingSlugColumnError(primaryAttempt.error, table)) {
     return primaryAttempt;
   }
 
   return (supabase.from(table) as any).update(stripSlugField(payload)).eq("id", id);
+};
+
+const getBrandByIdWithOptionalSlug = async (brandId: string) => {
+  const withSlug = await (supabase.from("brands") as any)
+    .select("id, name, slug")
+    .eq("id", brandId)
+    .maybeSingle();
+
+  if (!hasMissingSlugColumnError(withSlug.error, "brands")) {
+    return withSlug;
+  }
+
+  const withoutSlug = await (supabase.from("brands") as any)
+    .select("id, name")
+    .eq("id", brandId)
+    .maybeSingle();
+
+  if (!withoutSlug.data) {
+    return withoutSlug;
+  }
+
+  return {
+    ...withoutSlug,
+    data: {
+      ...withoutSlug.data,
+      slug: slugify(withoutSlug.data.name) || withoutSlug.data.id,
+    },
+  };
 };
 
 const getSeriesRevalidationPaths = async (seriesId: string, serviceType: string) => {
@@ -125,11 +153,7 @@ const getSeriesRevalidationPaths = async (seriesId: string, serviceType: string)
     return [];
   }
 
-  const { data: brand } = await supabase
-    .from("brands")
-    .select("id, name, slug")
-    .eq("id", series.brand_id)
-    .maybeSingle();
+  const { data: brand } = await getBrandByIdWithOptionalSlug(series.brand_id);
 
   if (!brand) {
     return [];
@@ -165,11 +189,7 @@ const getModelRevalidationPaths = async (modelId: string, serviceType: string) =
     return [];
   }
 
-  const { data: brand } = await supabase
-    .from("brands")
-    .select("id, name, slug")
-    .eq("id", series.brand_id)
-    .maybeSingle();
+  const { data: brand } = await getBrandByIdWithOptionalSlug(series.brand_id);
 
   if (!brand) {
     return [];
@@ -313,13 +333,13 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     if (!name.trim()) return;
     setSaving(true);
     const trimmedName = name.trim();
-    const { data, error } = await supabase.from("brands").insert({
+    const { data, error } = await insertWithOptionalSlug("brands", {
       name: trimmedName,
       slug: slugify(trimmedName),
       letter: trimmedName.charAt(0).toUpperCase(),
       gradient: "from-blue-500 to-cyan-500",
       service_type: serviceType,
-    } as any).select().single();
+    } as any);
     if (!error && data) {
       let finalUrl = imageUrl;
       if (image) finalUrl = await uploadServiceImage("brand-images", data.id, image);
@@ -361,7 +381,12 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       const url = await uploadServiceImage("brand-images", editBrand.id, editImage);
       if (url) updates.image_url = url;
     }
-    await supabase.from("brands").update(updates).eq("id", editBrand.id);
+    const { error } = await updateWithOptionalSlug("brands", editBrand.id, updates);
+    if (error) {
+      toast.error(error.message);
+      setEditSaving(false);
+      return;
+    }
     await revalidateBrandPages(serviceType);
     setBrands((current) => sortBrandsForAdmin(current.map((brand) => (brand.id === editBrand.id ? { ...brand, ...updates } : brand))));
     toast.success("Updated"); setEditBrand(null);
