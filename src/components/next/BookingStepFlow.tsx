@@ -503,10 +503,18 @@ export function BookingStepFlow({
               </p>
             ) : (
               filteredSubcategories.map((subcategory) => (
-                <button key={subcategory.id} onClick={() => continueAfterSelection({ category: selectedCategoryId || "", repair: subcategory.id })} className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-card-brand">
+                <button key={subcategory.id} onClick={() => continueAfterSelection({ category: selectedCategoryId || "", repair: subcategory.id })} className="flex w-full items-center gap-3 rounded-3xl border border-border/80 bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-card-brand">
                   {subcategory.image_url ? <img src={subcategory.image_url} alt={subcategory.name} className="h-10 w-10 rounded-xl object-contain" /> : <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary"><Wrench className="h-5 w-5 text-muted-foreground" /></div>}
-                  <div className="flex-1"><span className="text-sm font-bold text-foreground">{subcategory.name}</span></div>
-                  <div className="text-right"><span className="text-lg font-extrabold gradient-brand-text">Rs. {subcategory.price}</span></div>
+                  <div className="flex-1">
+                    <span className="block text-sm font-bold text-foreground">{subcategory.name}</span>
+                    <span className="mt-1 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                      At-home repair service
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Starts from</span>
+                    <span className="text-lg font-extrabold gradient-brand-text">Rs. {subcategory.price}</span>
+                  </div>
                 </button>
               ))
             )}

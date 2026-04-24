@@ -231,10 +231,10 @@ export function BookingClientPage({
                           <button
                             key={subcategory.id}
                             onClick={() => setSelectedSubcategory(subcategory)}
-                            className={`flex w-full items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all ${
+                            className={`flex w-full items-center gap-3 rounded-3xl border p-4 text-left transition-all ${
                               isSelected
-                                ? "border-primary bg-primary/5 shadow-elevated-brand"
-                                : "border-border bg-card shadow-card-brand hover:border-primary/30"
+                                ? "border-primary bg-primary/5 shadow-elevated-brand ring-2 ring-primary/10"
+                                : "border-border/80 bg-card shadow-card-brand hover:-translate-y-0.5 hover:border-primary/30"
                             }`}
                           >
                             {subcategory.image_url ? (
@@ -245,9 +245,15 @@ export function BookingClientPage({
                               </div>
                             )}
                             <div className="flex-1">
-                              <span className="text-sm font-bold text-foreground">{subcategory.name}</span>
+                              <span className="block text-sm font-bold text-foreground">{subcategory.name}</span>
+                              <span className="mt-1 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                                At-home repair service
+                              </span>
                             </div>
                             <div className="text-right">
+                              <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                                Starts from
+                              </span>
                               <span className="text-lg font-extrabold gradient-brand-text">Rs. {subcategory.price}</span>
                             </div>
                           </button>
