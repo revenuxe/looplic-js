@@ -685,6 +685,8 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", serviceType).order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, [serviceType]);
   useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else { setSeriesList([]); } setSelectedSeries(""); }, [selectedBrand]);
@@ -748,8 +750,128 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     setModels((current) => current.filter((model) => model.id !== id)); toast.success("Deleted");
   };
 
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
+
+    try {
+      const rows = await parseScreenGuardImportFile(file);
+      const validRows = rows.filter((row) => row.modelName || row.imageUrl);
+
+      if (validRows.length === 0) {
+        toast.error("The uploaded sheet is empty.");
+        return;
+      }
+
+      const { data: allModels, error: modelsError } = await supabase.from("models").select("id, name, series_id");
+      if (modelsError || !allModels) {
+        toast.error(modelsError?.message || "Unable to load models for import.");
+        return;
+      }
+
+      const modelMatches = new Map<string, Array<{ id: string; name: string; series_id: string }>>();
+      for (const model of allModels as Array<{ id: string; name: string; series_id: string }>) {
+        const key = normalizeGuardKey(model.name);
+        modelMatches.set(key, [...(modelMatches.get(key) || []), model]);
+      }
+
+      const touchedModelIds = new Set<string>();
+      let updatedCount = 0;
+      const skipped: string[] = [];
+
+      for (const [index, row] of validRows.entries()) {
+        if (!row.modelName || !row.imageUrl) {
+          skipped.push(`Row ${index + 2}: missing Model or Image URL`);
+          continue;
+        }
+
+        const matches = modelMatches.get(normalizeGuardKey(row.modelName)) || [];
+        if (matches.length === 0) {
+          skipped.push(`Row ${index + 2}: model "${row.modelName}" not found`);
+          continue;
+        }
+
+        const scopedMatches = selectedSeries ? matches.filter((model) => model.series_id === selectedSeries) : matches;
+        if (scopedMatches.length === 0) {
+          skipped.push(`Row ${index + 2}: model "${row.modelName}" is outside the selected series`);
+          continue;
+        }
+        if (scopedMatches.length > 1) {
+          skipped.push(`Row ${index + 2}: model "${row.modelName}" matched multiple records`);
+          continue;
+        }
+
+        const model = scopedMatches[0];
+        const { error } = await (supabase.from("models") as any).update({ image_url: row.imageUrl }).eq("id", model.id);
+        if (error) {
+          skipped.push(`Row ${index + 2}: ${error.message}`);
+          continue;
+        }
+
+        updatedCount += 1;
+        touchedModelIds.add(model.id);
+      }
+
+      if (touchedModelIds.size > 0) {
+        const exactPaths = (
+          await Promise.all(Array.from(touchedModelIds).map((modelId) => getModelRevalidationPaths(modelId, serviceType)))
+        ).flat();
+        await revalidateCatalogMutation(serviceType, { exactPaths });
+      }
+
+      if (selectedSeries) {
+        await fetchModels(selectedSeries);
+      }
+
+      if (updatedCount) {
+        toast.success(`Import complete: ${updatedCount} model image${updatedCount === 1 ? "" : "s"} updated${skipped.length ? `, ${skipped.length} skipped` : ""}.`);
+      } else {
+        toast.error(skipped[0] || "No rows were imported.");
+      }
+
+      if (skipped.length) {
+        console.warn("Model image import skipped rows:", skipped);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to import this file.");
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div>
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card-brand">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-black text-foreground">Bulk Import Model Images</div>
+            <p className="mt-1 text-xs text-muted-foreground">Use this in the model section with only two columns in the sheet: Model and Image URL.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={downloadScreenGuardTemplate} type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
+              <Download className="h-3.5 w-3.5" /> Download Template
+            </button>
+            <button onClick={() => importInputRef.current?.click()} type="button" disabled={importing} className="inline-flex items-center gap-1.5 rounded-xl gradient-brand px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
+              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload Sheet
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleImportFile(file);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
           <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Brand</label>
@@ -1072,8 +1194,6 @@ const ModelGuardsTab = () => {
   const [categories, setCategories] = useState<GuardCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [saving, setSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", "mobile").order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, []);
   useEffect(() => { supabase.from("screen_guard_categories").select("*").order("name").then(({ data }) => { if (data) setCategories(data); }); }, []);
@@ -1106,125 +1226,8 @@ const ModelGuardsTab = () => {
     fetchGuards(selectedModel); toast.success("Deleted");
   };
 
-  const handleImportFile = async (file: File) => {
-    setImporting(true);
-
-    try {
-      const rows = await parseScreenGuardImportFile(file);
-      const validRows = rows.filter((row) => row.modelName || row.imageUrl);
-
-      if (validRows.length === 0) {
-        toast.error("The uploaded sheet is empty.");
-        return;
-      }
-
-      const { data: allModels, error: modelsError } = await supabase.from("models").select("id, name");
-      if (modelsError || !allModels) {
-        toast.error(modelsError?.message || "Unable to load models for import.");
-        return;
-      }
-
-      const modelMatches = new Map<string, Array<{ id: string; name: string }>>();
-      for (const model of allModels as Array<{ id: string; name: string }>) {
-        const key = normalizeGuardKey(model.name);
-        modelMatches.set(key, [...(modelMatches.get(key) || []), model]);
-      }
-
-      const touchedModelIds = new Set<string>();
-      let updatedCount = 0;
-      const skipped: string[] = [];
-
-      for (const [index, row] of validRows.entries()) {
-        if (!row.modelName || !row.imageUrl) {
-          skipped.push(`Row ${index + 2}: missing Model or Image URL`);
-          continue;
-        }
-
-        const matches = modelMatches.get(normalizeGuardKey(row.modelName)) || [];
-        if (matches.length === 0) {
-          skipped.push(`Row ${index + 2}: model "${row.modelName}" not found`);
-          continue;
-        }
-        if (matches.length > 1) {
-          skipped.push(`Row ${index + 2}: model "${row.modelName}" matched multiple records`);
-          continue;
-        }
-
-        const model = matches[0];
-        const { error } = await (supabase.from("models") as any).update({ image_url: row.imageUrl }).eq("id", model.id);
-        if (error) {
-          skipped.push(`Row ${index + 2}: ${error.message}`);
-          continue;
-        }
-
-        updatedCount += 1;
-        touchedModelIds.add(model.id);
-      }
-
-      if (touchedModelIds.size > 0) {
-        const exactPaths = (
-          await Promise.all(Array.from(touchedModelIds).map((modelId) => getModelRevalidationPaths(modelId, "mobile")))
-        ).flat();
-        await revalidateCatalogMutation("mobile", { exactPaths });
-      }
-
-      if (selectedSeries) {
-        const { data: refreshedModels } = await supabase.from("models").select("*").eq("series_id", selectedSeries).order("name");
-        if (refreshedModels) {
-          setModels(refreshedModels as any);
-        }
-      }
-
-      if (updatedCount) {
-        toast.success(`Import complete: ${updatedCount} model image${updatedCount === 1 ? "" : "s"} updated${skipped.length ? `, ${skipped.length} skipped` : ""}.`);
-      } else {
-        toast.error(skipped[0] || "No rows were imported.");
-      }
-
-      if (skipped.length) {
-        console.warn("Model image import skipped rows:", skipped);
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to import this file.");
-    } finally {
-      setImporting(false);
-      if (importInputRef.current) {
-        importInputRef.current.value = "";
-      }
-    }
-  };
-
   return (
     <div>
-      <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card-brand">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-black text-foreground">Bulk Import Model Images</div>
-            <p className="mt-1 text-xs text-muted-foreground">Upload an Excel, CSV, or Google Sheets export with only two columns: Model and Image URL.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={downloadScreenGuardTemplate} type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
-              <Download className="h-3.5 w-3.5" /> Download Template
-            </button>
-            <button onClick={() => importInputRef.current?.click()} type="button" disabled={importing} className="inline-flex items-center gap-1.5 rounded-xl gradient-brand px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
-              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload Sheet
-            </button>
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  void handleImportFile(file);
-                }
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div>
           <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Brand</label>
