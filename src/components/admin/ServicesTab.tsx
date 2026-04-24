@@ -6,6 +6,7 @@ import {
   Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree, GripVertical
 } from "lucide-react";
 import { slugify } from "@/src/lib/slug";
+import { convertFileToWebp } from "@/src/lib/images/webp";
 import ImageUpload from "./ImageUpload";
 
 const supabase = createClient() as any;
@@ -41,9 +42,13 @@ const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () 
 };
 
 const uploadServiceImage = async (bucket: string, id: string, file: File) => {
-  const ext = file.name.split(".").pop();
-  const path = `${id}.${ext}`;
-  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  const optimizedFile = await convertFileToWebp(file);
+  const path = `${id}.webp`;
+  const { error } = await supabase.storage.from(bucket).upload(path, optimizedFile, {
+    upsert: true,
+    contentType: "image/webp",
+    cacheControl: "31536000",
+  });
   if (error) return null;
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 };
@@ -828,9 +833,13 @@ const ScreenGuardsManageTab = () => {
   useEffect(() => { if (selectedCat) fetchTypes(selectedCat); else setTypes([]); }, [selectedCat]);
 
   const uploadTypeImage = async (id: string, file: File) => {
-    const ext = file.name.split(".").pop();
-    const path = `${id}.${ext}`;
-    const { error } = await supabase.storage.from("guard-type-images").upload(path, file, { upsert: true });
+    const optimizedFile = await convertFileToWebp(file);
+    const path = `${id}.webp`;
+    const { error } = await supabase.storage.from("guard-type-images").upload(path, optimizedFile, {
+      upsert: true,
+      contentType: "image/webp",
+      cacheControl: "31536000",
+    });
     if (error) return null;
     return supabase.storage.from("guard-type-images").getPublicUrl(path).data.publicUrl;
   };
