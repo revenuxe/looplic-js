@@ -95,3 +95,7 @@ export function formatBookingServiceType(serviceType: string) {
 export function formatBookingStatus(status: string) {
   return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
+
+export function isMissingBookingCodeColumnError(error: { message?: string } | null | undefined) {
+  return Boolean(error?.message && error.message.includes("column bookings.booking_code does not exist"));
+}

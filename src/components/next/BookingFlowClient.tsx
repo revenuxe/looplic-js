@@ -14,7 +14,7 @@ import type {
   RepairCategory,
   RepairSubcategory,
 } from "@/src/lib/data/catalog";
-import { buildBookingInsert, isValidPhoneNumber, isValidPincode, parseBookingLocation } from "@/src/lib/bookings";
+import { buildBookingInsert, isMissingBookingCodeColumnError, isValidPhoneNumber, isValidPincode, parseBookingLocation } from "@/src/lib/bookings";
 import { createClient } from "@/src/lib/supabase/client";
 
 type SavedProfile = {
@@ -236,9 +236,17 @@ export function BookingFlowClient({
       guardType: !isRepair ? selectedGuard?.guard_type ?? null : null,
     });
 
-    const { data, error } = await supabase.from("bookings").insert(insertData).select("booking_code").single();
+    const bookingInsert = await supabase.from("bookings").insert(insertData).select("booking_code").single();
+    const bookingCode = bookingInsert.data?.booking_code || "";
 
-    if (error) {
+    if (bookingInsert.error && isMissingBookingCodeColumnError(bookingInsert.error)) {
+      const fallbackInsert = await supabase.from("bookings").insert(insertData);
+      if (fallbackInsert.error) {
+        toast.error("Booking failed. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    } else if (bookingInsert.error) {
       toast.error("Booking failed. Please try again.");
       setSubmitting(false);
       return;
@@ -256,7 +264,7 @@ export function BookingFlowClient({
     }
 
     toast.success("Booking confirmed!");
-    setBookedCode(data?.booking_code || "");
+    setBookedCode(bookingCode);
     setBooked(true);
     setSubmitting(false);
   }

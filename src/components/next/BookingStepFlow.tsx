@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { buildBookingInsert, isValidPhoneNumber, isValidPincode, parseBookingLocation } from "@/src/lib/bookings";
+import { buildBookingInsert, isMissingBookingCodeColumnError, isValidPhoneNumber, isValidPincode, parseBookingLocation } from "@/src/lib/bookings";
 import type { BookingInsert } from "@/src/lib/bookings";
 import { buildCustomerProfileInsert } from "@/src/lib/profile";
 import type {
@@ -362,16 +362,24 @@ export function BookingStepFlow({
         repairSubcategoryId: isRepair ? selectedSubcategory?.id ?? null : null,
         guardType: !isRepair ? selectedGuard?.guard_type ?? null : null,
       }) as BookingInsert;
-    const { data, error } = await supabase.from("bookings").insert(insertData as any).select("booking_code").single();
+    const bookingInsert = await supabase.from("bookings").insert(insertData as any).select("booking_code").single();
+    const bookingCode = bookingInsert.data?.booking_code || "";
 
-    if (error) {
-      toast.error(error.message || "Booking failed. Please try again.");
+    if (bookingInsert.error && isMissingBookingCodeColumnError(bookingInsert.error)) {
+      const fallbackInsert = await supabase.from("bookings").insert(insertData as any);
+      if (fallbackInsert.error) {
+        toast.error(fallbackInsert.error.message || "Booking failed. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    } else if (bookingInsert.error) {
+      toast.error(bookingInsert.error.message || "Booking failed. Please try again.");
       setSubmitting(false);
       return;
     }
 
     toast.success("Booking confirmed!");
-    setBookedCode(data?.booking_code || "");
+    setBookedCode(bookingCode);
     setBooked(true);
     setSubmitting(false);
   }
