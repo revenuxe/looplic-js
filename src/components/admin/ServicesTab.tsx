@@ -17,6 +17,9 @@ type Guard = { id: string; model_id: string; guard_type: string; price: number }
 type GuardCategory = { id: string; name: string };
 type GuardType = { id: string; category_id: string; name: string; image_url: string | null; price: number };
 
+const sortByName = <T extends { name: string }>(items: T[]) => [...items].sort((a, b) => a.name.localeCompare(b.name));
+const sortBrandsForAdmin = (items: Brand[]) => [...items].sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+
 // ─── Reusable Modal ─────────────────────────────
 const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
   if (!open) return null;
@@ -243,7 +246,6 @@ const revalidateCatalogMutation = async (serviceType: string, options?: { exactP
 // ─── Brands Tab ─────────────────────────────
 const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [image, setImage] = useState<File | null>(null);
@@ -261,10 +263,8 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [moveSaving, setMoveSaving] = useState(false);
 
   const fetch = async () => {
-    setLoading(true);
     const { data } = await supabase.from("brands").select("*").eq("service_type", serviceType).order("sort_order").order("name");
     if (data) setBrands(data as Brand[]);
-    setLoading(false);
   };
   useEffect(() => { fetch(); }, [serviceType]);
 
@@ -283,8 +283,17 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       let finalUrl = imageUrl;
       if (image) finalUrl = await uploadServiceImage("brand-images", data.id, image);
       if (finalUrl) await supabase.from("brands").update({ image_url: finalUrl }).eq("id", data.id);
+      setBrands((current) =>
+        sortBrandsForAdmin([
+          ...current,
+          {
+            ...data,
+            image_url: finalUrl ?? data.image_url ?? null,
+          } as Brand,
+        ]),
+      );
     }
-    if (error) toast.error(error.message); else { await revalidateBrandPages(serviceType); toast.success("Brand added"); reset(); fetch(); }
+    if (error) toast.error(error.message); else { await revalidateBrandPages(serviceType); toast.success("Brand added"); reset(); }
     setSaving(false);
   };
 
@@ -313,14 +322,15 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     }
     await supabase.from("brands").update(updates).eq("id", editBrand.id);
     await revalidateBrandPages(serviceType);
-    toast.success("Updated"); setEditBrand(null); fetch();
+    setBrands((current) => sortBrandsForAdmin(current.map((brand) => (brand.id === editBrand.id ? { ...brand, ...updates } : brand))));
+    toast.success("Updated"); setEditBrand(null);
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("brands" as any) as any).delete().eq("id", id);
     await revalidateBrandPages(serviceType);
-    fetch(); toast.success("Deleted");
+    setBrands((current) => current.filter((brand) => brand.id !== id)); toast.success("Deleted");
   };
 
   const handleMove = async () => {
@@ -443,7 +453,7 @@ const BrandsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
         </div>
       </Modal>
 
-      {loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : brands.length === 0 ? (
+      {brands.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Shield className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No brands yet</p></div>
       ) : (
         <div className="space-y-2">
@@ -474,7 +484,6 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selectedBrand, setSelectedBrand] = useState("");
   const [seriesList, setSeriesList] = useState<Series[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [addImage, setAddImage] = useState<File | null>(null);
@@ -491,10 +500,8 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", serviceType).order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, [serviceType]);
 
   const fetchSeries = async (brandId: string) => {
-    setLoading(true);
     const { data } = await supabase.from("series").select("*").eq("brand_id", brandId).order("name");
     if (data) setSeriesList(data as any);
-    setLoading(false);
   };
 
   useEffect(() => { if (selectedBrand) fetchSeries(selectedBrand); else setSeriesList([]); }, [selectedBrand]);
@@ -506,11 +513,16 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     const insertData: any = { brand_id: selectedBrand, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
     const { data, error } = await insertWithOptionalSlug("series", insertData);
+    let finalUrl = addImageUrl;
     if (!error && data && addImage) {
-      const url = await uploadServiceImage("service-images", `series-${data.id}`, addImage);
-      if (url) await (supabase.from("series") as any).update({ image_url: url }).eq("id", data.id);
+      finalUrl = await uploadServiceImage("service-images", `series-${data.id}`, addImage);
+      if (finalUrl) await (supabase.from("series") as any).update({ image_url: finalUrl }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { await revalidateCatalogMutation(serviceType, { exactPaths: await getSeriesRevalidationPaths(data.id, serviceType) }); toast.success("Series added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchSeries(selectedBrand); }
+    if (error) toast.error(error.message); else {
+      setSeriesList((current) => sortByName([...current, { ...(data as Series), image_url: finalUrl ?? (data as Series).image_url ?? null }]));
+      await revalidateCatalogMutation(serviceType, { exactPaths: await getSeriesRevalidationPaths(data.id, serviceType) });
+      toast.success("Series added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null);
+    }
     setSaving(false);
   };
 
@@ -534,15 +546,16 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       setEditSaving(false);
       return;
     }
+    setSeriesList((current) => sortByName(current.map((series) => (series.id === editItem.id ? { ...series, ...updates } : series))));
     await revalidateCatalogMutation(serviceType, { exactPaths: await getSeriesRevalidationPaths(editItem.id, serviceType) });
-    toast.success("Updated"); setEditItem(null); fetchSeries(selectedBrand);
+    toast.success("Updated"); setEditItem(null);
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("series" as any) as any).delete().eq("id", id);
     await revalidateCatalogMutation(serviceType);
-    fetchSeries(selectedBrand); toast.success("Deleted");
+    setSeriesList((current) => current.filter((series) => series.id !== id)); toast.success("Deleted");
   };
 
   return (
@@ -592,7 +605,7 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
         </div>
       </Modal>
 
-      {!selectedBrand ? <p className="text-xs text-muted-foreground text-center py-8">Select a brand first</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : seriesList.length === 0 ? (
+      {!selectedBrand ? <p className="text-xs text-muted-foreground text-center py-8">Select a brand first</p> : seriesList.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Layers className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No series yet</p></div>
       ) : (
         <div className="space-y-2">
@@ -619,7 +632,6 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedSeries, setSelectedSeries] = useState("");
   const [models, setModels] = useState<Model[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [addImage, setAddImage] = useState<File | null>(null);
@@ -637,10 +649,8 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
   useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else { setSeriesList([]); } setSelectedSeries(""); }, [selectedBrand]);
 
   const fetchModels = async (seriesId: string) => {
-    setLoading(true);
     const { data } = await supabase.from("models").select("*").eq("series_id", seriesId).order("name");
     if (data) setModels(data as any);
-    setLoading(false);
   };
 
   useEffect(() => { if (selectedSeries) fetchModels(selectedSeries); else setModels([]); }, [selectedSeries]);
@@ -652,11 +662,16 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     const insertData: any = { series_id: selectedSeries, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
     const { data, error } = await insertWithOptionalSlug("models", insertData);
+    let finalUrl = addImageUrl;
     if (!error && data && addImage) {
-      const url = await uploadServiceImage("service-images", `model-${data.id}`, addImage);
-      if (url) await (supabase.from("models") as any).update({ image_url: url }).eq("id", data.id);
+      finalUrl = await uploadServiceImage("service-images", `model-${data.id}`, addImage);
+      if (finalUrl) await (supabase.from("models") as any).update({ image_url: finalUrl }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { await revalidateCatalogMutation(serviceType, { exactPaths: await getModelRevalidationPaths(data.id, serviceType) }); toast.success("Model added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchModels(selectedSeries); }
+    if (error) toast.error(error.message); else {
+      setModels((current) => sortByName([...current, { ...(data as Model), image_url: finalUrl ?? (data as Model).image_url ?? null }]));
+      await revalidateCatalogMutation(serviceType, { exactPaths: await getModelRevalidationPaths(data.id, serviceType) });
+      toast.success("Model added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null);
+    }
     setSaving(false);
   };
 
@@ -680,15 +695,16 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       setEditSaving(false);
       return;
     }
+    setModels((current) => sortByName(current.map((model) => (model.id === editItem.id ? { ...model, ...updates } : model))));
     await revalidateCatalogMutation(serviceType, { exactPaths: await getModelRevalidationPaths(editItem.id, serviceType) });
-    toast.success("Updated"); setEditItem(null); fetchModels(selectedSeries);
+    toast.success("Updated"); setEditItem(null);
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("models" as any) as any).delete().eq("id", id);
     await revalidateCatalogMutation(serviceType);
-    fetchModels(selectedSeries); toast.success("Deleted");
+    setModels((current) => current.filter((model) => model.id !== id)); toast.success("Deleted");
   };
 
   return (
@@ -750,7 +766,7 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
         </div>
       </Modal>
 
-      {!selectedSeries ? <p className="text-xs text-muted-foreground text-center py-8">{!selectedBrand ? "Select brand & series" : "Select a series"}</p> : loading ? <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div> : models.length === 0 ? (
+      {!selectedSeries ? <p className="text-xs text-muted-foreground text-center py-8">{!selectedBrand ? "Select brand & series" : "Select a series"}</p> : models.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground"><Smartphone className="w-8 h-8 mx-auto mb-2 opacity-30" /><p className="text-sm font-semibold">No models yet</p></div>
       ) : (
         <div className="space-y-2">

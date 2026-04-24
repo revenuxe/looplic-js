@@ -10,43 +10,59 @@ export function HomepageFooter() {
     <footer id="contact" className="border-t border-border bg-card py-8">
       <div className="container max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col gap-8">
-          <div className="grid gap-8 md:grid-cols-[1.15fr_0.85fr_0.9fr]">
-            <div className="text-center md:text-left">
-              <img src={logo.src} alt="Looplic" className="mx-auto mb-3 h-7 md:mx-0" />
-              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                Fast doorstep support for screen guards and repair bookings, backed by clear policies, responsive help, and dependable customer care.
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="overflow-hidden rounded-[28px] border border-border bg-[radial-gradient(circle_at_top_left,_hsl(211_100%_50%_/_0.14),_transparent_35%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(241,245,249,0.92))] p-6 shadow-card-brand">
+              <img src={logo.src} alt="Looplic" className="mb-4 h-8" />
+              <h3 className="max-w-md text-2xl font-black leading-tight text-foreground">
+                Fast screen guard help, cleaner booking flow, and real support when customers need it.
+              </h3>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
+                Doorstep screen guard installation and device support, built to feel quick, clear, and dependable from first tap to final confirmation.
               </p>
-            </div>
-
-            <div className="text-center md:text-left">
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Menu</div>
-              <div className="mt-3 grid gap-2 text-sm font-semibold">
-                <Link href="/" className="transition-colors hover:text-foreground">
-                  Home
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link href="/brands" className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
+                  Browse Brands
                 </Link>
-                <Link href="/brands" className="transition-colors hover:text-foreground">
-                  Services
+                <Link href="/bangalore" className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
+                  Bangalore
                 </Link>
-                {footerLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="transition-colors hover:text-foreground">
-                    {link.label}
-                  </Link>
-                ))}
+                <Link href="/tempered-glass" className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
+                  Tempered Glass
+                </Link>
               </div>
             </div>
 
-            <div className="text-center md:text-left">
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Support</div>
-              <div className="mt-3 flex flex-col gap-2">
-                <a href={`tel:+91${supportPhone}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-sm font-semibold text-foreground md:justify-start">
-                  <Phone className="h-4 w-4" /> {supportPhoneDisplay}
-                </a>
-                <a href={`mailto:${supportEmail}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 py-2 text-sm font-semibold text-foreground md:justify-start">
-                  <Mail className="h-4 w-4" /> {supportEmail}
-                </a>
-                <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 md:justify-start">
-                  <Image src="/whatsapp.svg" alt="" width={16} height={16} className="h-4 w-4" aria-hidden="true" /> WhatsApp support
-                </a>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[28px] border border-border bg-secondary/40 p-5 shadow-card-brand">
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Menu</div>
+                <div className="mt-4 grid gap-2 text-sm font-semibold">
+                  <Link href="/" className="transition-colors hover:text-foreground">
+                    Home
+                  </Link>
+                  <Link href="/brands" className="transition-colors hover:text-foreground">
+                    Services
+                  </Link>
+                  {footerLinks.map((link) => (
+                    <Link key={link.href} href={link.href} className="transition-colors hover:text-foreground">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-border bg-card p-5 shadow-card-brand">
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-muted-foreground">Support</div>
+                <div className="mt-4 flex flex-col gap-2">
+                  <a href={`tel:+91${supportPhone}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-3 py-3 text-sm font-semibold text-foreground md:justify-start">
+                    <Phone className="h-4 w-4" /> {supportPhoneDisplay}
+                  </a>
+                  <a href={`mailto:${supportEmail}`} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-secondary px-3 py-3 text-sm font-semibold text-foreground md:justify-start">
+                    <Mail className="h-4 w-4" /> {supportEmail}
+                  </a>
+                  <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-700 md:justify-start">
+                    <Image src="/whatsapp.svg" alt="" width={16} height={16} className="h-4 w-4" aria-hidden="true" /> WhatsApp support
+                  </a>
+                </div>
               </div>
             </div>
           </div>

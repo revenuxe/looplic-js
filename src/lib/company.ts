@@ -5,6 +5,8 @@ export const supportPhoneDisplay = "+91 98865 79923";
 export const whatsappUrl = `https://wa.me/91${supportPhone}`;
 
 export const footerLinks = [
+  { href: "/bangalore", label: "Bangalore" },
+  { href: "/tempered-glass", label: "Tempered Glass" },
   { href: "/about-us", label: "About Us" },
   { href: "/contact-us", label: "Contact Us" },
   { href: "/privacy-policy", label: "Privacy Policy" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Laptop, Loader2, LogOut, Shield, Smartphone } from "lucide-react";
+import { CalendarCheck, Laptop, LogOut, Shield, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -25,15 +25,11 @@ export function AdminDashboardClient() {
   }
 
   if (loading || !user || !isAdmin) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </main>
-    );
+    return <main className="min-h-screen bg-background" />;
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background [&_svg.animate-spin]:hidden">
       <header className="sticky top-0 z-50 border-b border-border bg-card/90 backdrop-blur-lg">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-3">

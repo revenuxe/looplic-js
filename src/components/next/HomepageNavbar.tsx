@@ -21,6 +21,12 @@ export function HomepageNavbar() {
           <Link href="/brands" className="transition-colors hover:text-foreground">
             Services
           </Link>
+          <Link href="/bangalore" className="transition-colors hover:text-foreground">
+            Bangalore
+          </Link>
+          <Link href="/tempered-glass" className="transition-colors hover:text-foreground">
+            Tempered Glass
+          </Link>
           <a href="#how-it-works" className="transition-colors hover:text-foreground">
             How It Works
           </a>
@@ -46,6 +52,12 @@ export function HomepageNavbar() {
           <div className="container flex flex-col gap-3 py-4">
             <Link href="/brands" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               Services
+            </Link>
+            <Link href="/bangalore" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
+              Bangalore
+            </Link>
+            <Link href="/tempered-glass" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
+              Tempered Glass
             </Link>
             <a href="#how-it-works" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               How It Works

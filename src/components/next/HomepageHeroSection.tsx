@@ -19,11 +19,21 @@ export function HomepageHeroSection({
   searchBrands,
   searchSeries,
   searchModels,
+  title = "Get Screen Guard Installed at Your Door",
+  description = "Find model, choose guard, and book a technician in under a minute.",
+  browseHref = "/brands",
+  searchPlaceholder = "Search your phone model...",
+  eyebrow,
 }: {
   brands: CatalogBrand[];
   searchBrands: CatalogBrand[];
   searchSeries: SearchSeries[];
   searchModels: SearchModel[];
+  title?: string;
+  description?: string;
+  browseHref?: string;
+  searchPlaceholder?: string;
+  eyebrow?: string;
 }) {
   return (
     <section className="relative overflow-hidden pb-6 pt-8 md:pb-20 md:pt-16">
@@ -33,16 +43,21 @@ export function HomepageHeroSection({
 
       <div className="container relative z-10">
         <div className="mx-auto max-w-lg text-center">
+          {eyebrow ? (
+            <p className="mb-3 text-[11px] font-black uppercase tracking-[0.24em] text-primary/80">
+              {eyebrow}
+            </p>
+          ) : null}
           <h1 className="px-4 text-[26px] font-extrabold leading-[1.15] tracking-tight text-foreground md:text-5xl">
-            Get Screen Guard <span className="mt-1 block gradient-brand-text">Installed at Your Door</span>
+            {title}
           </h1>
           <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-            Find model, choose guard, and book a technician in under a minute.
+            {description}
           </p>
 
           <DeviceSearchBox
-            placeholder="Search your phone model..."
-            browseHref="/brands"
+            placeholder={searchPlaceholder}
+            browseHref={browseHref}
             brands={searchBrands}
             series={searchSeries}
             models={searchModels}
@@ -53,7 +68,7 @@ export function HomepageHeroSection({
         <div className="mx-auto mt-8 max-w-md">
           <div className="mb-3 flex items-center justify-between px-1">
             <p className="text-xs font-bold text-muted-foreground">- Pick a brand for your phone -</p>
-            <Link href="/brands" className="flex items-center gap-0.5 text-[10px] font-bold text-primary">
+            <Link href={browseHref} className="flex items-center gap-0.5 text-[10px] font-bold text-primary">
               All <ChevronRight className="h-3 w-3" />
             </Link>
           </div>

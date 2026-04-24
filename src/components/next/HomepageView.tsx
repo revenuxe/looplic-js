@@ -13,17 +13,37 @@ export function HomepageView({
   searchBrands,
   searchSeries,
   searchModels,
+  heroTitle,
+  heroDescription,
+  heroEyebrow,
+  heroBrowseHref,
+  heroSearchPlaceholder,
 }: {
   brands: CatalogBrand[];
   searchBrands: CatalogBrand[];
   searchSeries: SearchSeries[];
   searchModels: SearchModel[];
+  heroTitle?: string;
+  heroDescription?: string;
+  heroEyebrow?: string;
+  heroBrowseHref?: string;
+  heroSearchPlaceholder?: string;
 }) {
   return (
     <div className="min-h-screen bg-background">
       <HomepageNavbar />
       <HomepageServiceTabs />
-      <HomepageHeroSection brands={brands.slice(0, 6)} searchBrands={searchBrands} searchSeries={searchSeries} searchModels={searchModels} />
+      <HomepageHeroSection
+        brands={brands.slice(0, 6)}
+        searchBrands={searchBrands}
+        searchSeries={searchSeries}
+        searchModels={searchModels}
+        title={heroTitle}
+        description={heroDescription}
+        eyebrow={heroEyebrow}
+        browseHref={heroBrowseHref}
+        searchPlaceholder={heroSearchPlaceholder}
+      />
       <HomepageBrandGrid brands={brands} />
       <ScreenGuardTypes />
       <HowItWorks />

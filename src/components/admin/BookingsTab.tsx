@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, MapPin, Phone, Search, Trash2, X } from "lucide-react";
+import { Eye, MapPin, Phone, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/src/components/ui/input";
@@ -24,7 +24,6 @@ const statusColors: Record<string, string> = {
 const BookingsTab = () => {
   const supabase = createClient();
   const [bookings, setBookings] = useState<BookingView[]>([]);
-  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [detail, setDetail] = useState<BookingView | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -32,21 +31,18 @@ const BookingsTab = () => {
   const [serviceFilter, setServiceFilter] = useState("all");
 
   async function fetchBookings() {
-    setLoading(true);
     setErrorMessage("");
 
     const { data, error } = await supabase.from("bookings").select("*").order("created_at", { ascending: false });
     if (error) {
       setBookings([]);
       setErrorMessage(error.message || "Failed to load bookings.");
-      setLoading(false);
       return;
     }
 
     const rows = (data || []) as BookingRow[];
     if (!rows.length) {
       setBookings([]);
-      setLoading(false);
       return;
     }
 
@@ -94,7 +90,6 @@ const BookingsTab = () => {
         };
       }),
     );
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -136,14 +131,18 @@ const BookingsTab = () => {
   }
 
   async function deleteBooking(id: string) {
+    const previousBookings = bookings;
+    const previousDetail = detail;
+    setBookings((current) => current.filter((booking) => booking.id !== id));
+    setDetail((current) => (current?.id === id ? null : current));
     const { error } = await supabase.from("bookings").delete().eq("id", id);
     if (error) {
       toast.error(error.message || "Failed to delete booking.");
+      setBookings(previousBookings);
+      setDetail(previousDetail);
       return;
     }
     toast.success("Booking deleted.");
-    setDetail(null);
-    fetchBookings();
   }
 
   const stats = [
@@ -187,16 +186,15 @@ const BookingsTab = () => {
           </div>
         </div>
 
-        {loading ? <div className="flex justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div> : null}
-        {!loading && errorMessage ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">{errorMessage}</div> : null}
-        {!loading && !errorMessage && filteredBookings.length === 0 ? (
+        {errorMessage ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-5 text-sm text-rose-700">{errorMessage}</div> : null}
+        {!errorMessage && filteredBookings.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center text-muted-foreground">
             <p className="text-sm font-semibold text-foreground">{bookings.length === 0 ? "No bookings yet" : "No bookings match these filters"}</p>
             <p className="mt-1 text-xs">New customer orders will appear here automatically.</p>
           </div>
         ) : null}
 
-        {!loading && !errorMessage && filteredBookings.length > 0 ? (
+        {!errorMessage && filteredBookings.length > 0 ? (
           <div className="space-y-3">
             {filteredBookings.map((booking) => (
               <div key={booking.id} className="rounded-2xl border border-border/70 bg-card p-4">
