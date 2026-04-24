@@ -2,16 +2,24 @@
 
 import { Loader2, LogOut, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { createClient } from "@/src/lib/supabase/client";
 
 export function AuthHeaderActions({ mobile = false }: { mobile?: boolean }) {
   const supabase = createClient();
+  const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const signInHref = useMemo(() => {
+    const currentPath = pathname || "/";
+    const query = searchParams.toString();
+    const redirectTarget = query ? `${currentPath}?${query}` : currentPath;
+    return `/auth?redirect=${encodeURIComponent(redirectTarget)}`;
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     let ignore = false;
@@ -50,12 +58,12 @@ export function AuthHeaderActions({ mobile = false }: { mobile?: boolean }) {
 
   if (!user) {
     return mobile ? (
-      <Link href="/auth" className="px-2 py-1 text-xs font-bold text-primary">
+      <Link href={signInHref} className="px-2 py-1 text-xs font-bold text-primary">
         Sign In
       </Link>
     ) : (
       <Link
-        href="/auth"
+        href={signInHref}
         className="rounded-lg gradient-brand px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
         Sign In

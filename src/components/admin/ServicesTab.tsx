@@ -45,6 +45,108 @@ const uploadServiceImage = async (bucket: string, id: string, file: File) => {
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 };
 
+const hasMissingSlugColumnError = (error: { message?: string } | null | undefined, table: "series" | "models") =>
+  Boolean(error?.message && error.message.includes(`Could not find the 'slug' column of '${table}' in the schema cache`));
+
+const stripSlugField = <T extends Record<string, unknown>>(payload: T) => {
+  const { slug: _slug, ...rest } = payload;
+  return rest;
+};
+
+const insertWithOptionalSlug = async (table: "series" | "models", payload: Record<string, unknown>) => {
+  const primaryAttempt = await (supabase.from(table) as any).insert(payload).select().single();
+  if (!hasMissingSlugColumnError(primaryAttempt.error, table)) {
+    return primaryAttempt;
+  }
+
+  return (supabase.from(table) as any).insert(stripSlugField(payload)).select().single();
+};
+
+const updateWithOptionalSlug = async (table: "series" | "models", id: string, payload: Record<string, unknown>) => {
+  const primaryAttempt = await (supabase.from(table) as any).update(payload).eq("id", id);
+  if (!hasMissingSlugColumnError(primaryAttempt.error, table)) {
+    return primaryAttempt;
+  }
+
+  return (supabase.from(table) as any).update(stripSlugField(payload)).eq("id", id);
+};
+
+const getSeriesRevalidationPaths = async (seriesId: string, serviceType: string) => {
+  const { data: series } = await (supabase.from("series") as any)
+    .select("id, name, slug, brand_id")
+    .eq("id", seriesId)
+    .maybeSingle();
+
+  if (!series?.brand_id) {
+    return [];
+  }
+
+  const { data: brand } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .eq("id", series.brand_id)
+    .maybeSingle();
+
+  if (!brand) {
+    return [];
+  }
+
+  const brandSlug = brand.slug || slugify(brand.name) || brand.id;
+  const seriesSlug = series.slug || slugify(series.name) || series.id;
+  const paths = [serviceType === "laptop" ? `/service/laptop-repair/brands/${brandSlug}/${seriesSlug}` : `/brands/${brandSlug}/${seriesSlug}`];
+
+  if (serviceType !== "laptop") {
+    paths.push(`/service/mobile-repair/brands/${brandSlug}/${seriesSlug}`);
+  }
+
+  return paths;
+};
+
+const getModelRevalidationPaths = async (modelId: string, serviceType: string) => {
+  const { data: model } = await (supabase.from("models") as any)
+    .select("id, name, slug, series_id")
+    .eq("id", modelId)
+    .maybeSingle();
+
+  if (!model?.series_id) {
+    return [];
+  }
+
+  const { data: series } = await (supabase.from("series") as any)
+    .select("id, name, slug, brand_id")
+    .eq("id", model.series_id)
+    .maybeSingle();
+
+  if (!series?.brand_id) {
+    return [];
+  }
+
+  const { data: brand } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .eq("id", series.brand_id)
+    .maybeSingle();
+
+  if (!brand) {
+    return [];
+  }
+
+  const brandSlug = brand.slug || slugify(brand.name) || brand.id;
+  const seriesSlug = series.slug || slugify(series.name) || series.id;
+  const modelSlug = model.slug || slugify(model.name) || model.id;
+  const paths = [
+    serviceType === "laptop"
+      ? `/service/laptop-repair/book/${brandSlug}/${seriesSlug}/${modelSlug}`
+      : `/brands/${brandSlug}/${seriesSlug}/${modelSlug}`,
+  ];
+
+  if (serviceType !== "laptop") {
+    paths.push(`/service/mobile-repair/book/${brandSlug}/${seriesSlug}/${modelSlug}`);
+  }
+
+  return paths;
+};
+
 const revalidateBrandPages = async (serviceType: string) => {
   const paths =
     serviceType === "laptop"
@@ -82,6 +184,55 @@ const revalidateBrandPages = async (serviceType: string) => {
         paths,
         pagePaths,
         tags: ["catalog", "catalog-brands", "catalog-series", "catalog-models", "homepage-brands"],
+      }),
+    });
+  } catch {
+    // Ignore cache refresh errors so admin writes still succeed.
+  }
+};
+
+const revalidateCatalogMutation = async (serviceType: string, options?: { exactPaths?: string[]; extraTags?: string[] }) => {
+  const exactPaths = options?.exactPaths?.filter(Boolean) ?? [];
+  const extraTags = options?.extraTags?.filter(Boolean) ?? [];
+
+  try {
+    await fetch("/api/revalidate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        paths: Array.from(new Set([...exactPaths])),
+        pagePaths:
+          serviceType === "laptop"
+            ? [
+                "/service/[serviceType]",
+                "/service/[serviceType]/brands",
+                "/service/[serviceType]/brands/[brandSlug]",
+                "/service/[serviceType]/brands/[brandSlug]/[seriesSlug]",
+                "/service/[serviceType]/book/[brandSlug]/[seriesSlug]/[modelSlug]",
+              ]
+            : [
+                "/",
+                "/brands",
+                "/brands/[brandSlug]",
+                "/brands/[brandSlug]/[seriesSlug]",
+                "/brands/[brandSlug]/[seriesSlug]/[modelSlug]",
+                "/service/[serviceType]",
+                "/service/[serviceType]/brands",
+                "/service/[serviceType]/brands/[brandSlug]",
+                "/service/[serviceType]/brands/[brandSlug]/[seriesSlug]",
+                "/service/[serviceType]/book/[brandSlug]/[seriesSlug]/[modelSlug]",
+              ],
+        tags: [
+          "catalog",
+          "catalog-brands",
+          "catalog-series",
+          "catalog-models",
+          "catalog-screen-guards",
+          "homepage-brands",
+          ...extraTags,
+        ],
       }),
     });
   } catch {
@@ -354,12 +505,12 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     const trimmedName = name.trim();
     const insertData: any = { brand_id: selectedBrand, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
-    const { data, error } = await (supabase.from("series") as any).insert(insertData).select().single();
+    const { data, error } = await insertWithOptionalSlug("series", insertData);
     if (!error && data && addImage) {
       const url = await uploadServiceImage("service-images", `series-${data.id}`, addImage);
       if (url) await (supabase.from("series") as any).update({ image_url: url }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { toast.success("Series added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchSeries(selectedBrand); }
+    if (error) toast.error(error.message); else { await revalidateCatalogMutation(serviceType, { exactPaths: await getSeriesRevalidationPaths(data.id, serviceType) }); toast.success("Series added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchSeries(selectedBrand); }
     setSaving(false);
   };
 
@@ -377,13 +528,20 @@ const SeriesTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       const url = await uploadServiceImage("service-images", `series-${editItem.id}`, editImage);
       if (url) updates.image_url = url;
     }
-    await (supabase.from("series") as any).update(updates).eq("id", editItem.id);
+    const { error } = await updateWithOptionalSlug("series", editItem.id, updates);
+    if (error) {
+      toast.error(error.message);
+      setEditSaving(false);
+      return;
+    }
+    await revalidateCatalogMutation(serviceType, { exactPaths: await getSeriesRevalidationPaths(editItem.id, serviceType) });
     toast.success("Updated"); setEditItem(null); fetchSeries(selectedBrand);
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("series" as any) as any).delete().eq("id", id);
+    await revalidateCatalogMutation(serviceType);
     fetchSeries(selectedBrand); toast.success("Deleted");
   };
 
@@ -493,12 +651,12 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
     const trimmedName = name.trim();
     const insertData: any = { series_id: selectedSeries, name: trimmedName, slug: slugify(trimmedName) };
     if (addImageUrl) insertData.image_url = addImageUrl;
-    const { data, error } = await (supabase.from("models") as any).insert(insertData).select().single();
+    const { data, error } = await insertWithOptionalSlug("models", insertData);
     if (!error && data && addImage) {
       const url = await uploadServiceImage("service-images", `model-${data.id}`, addImage);
       if (url) await (supabase.from("models") as any).update({ image_url: url }).eq("id", data.id);
     }
-    if (error) toast.error(error.message); else { toast.success("Model added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchModels(selectedSeries); }
+    if (error) toast.error(error.message); else { await revalidateCatalogMutation(serviceType, { exactPaths: await getModelRevalidationPaths(data.id, serviceType) }); toast.success("Model added"); setShowAdd(false); setName(""); setAddImage(null); setAddImagePreview(null); setAddImageUrl(null); fetchModels(selectedSeries); }
     setSaving(false);
   };
 
@@ -516,13 +674,20 @@ const ModelsTab = ({ serviceType = "mobile" }: { serviceType?: string }) => {
       const url = await uploadServiceImage("service-images", `model-${editItem.id}`, editImage);
       if (url) updates.image_url = url;
     }
-    await (supabase.from("models") as any).update(updates).eq("id", editItem.id);
+    const { error } = await updateWithOptionalSlug("models", editItem.id, updates);
+    if (error) {
+      toast.error(error.message);
+      setEditSaving(false);
+      return;
+    }
+    await revalidateCatalogMutation(serviceType, { exactPaths: await getModelRevalidationPaths(editItem.id, serviceType) });
     toast.success("Updated"); setEditItem(null); fetchModels(selectedSeries);
     setEditSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("models" as any) as any).delete().eq("id", id);
+    await revalidateCatalogMutation(serviceType);
     fetchModels(selectedSeries); toast.success("Deleted");
   };
 
@@ -868,12 +1033,13 @@ const ModelGuardsTab = () => {
     if (!guardTypes || guardTypes.length === 0) { toast.error("No guard types in this category"); setSaving(false); return; }
     const inserts = (guardTypes as GuardType[]).map(t => ({ model_id: selectedModel, guard_type: t.name, price: t.price }));
     const { error } = await supabase.from("model_screen_guards").insert(inserts);
-    if (error) toast.error(error.message); else { toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
+    if (error) toast.error(error.message); else { await revalidateCatalogMutation("mobile", { exactPaths: await getModelRevalidationPaths(selectedModel, "mobile") }); toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
   };
 
   const handleDelete = async (id: string) => {
     await (supabase.from("model_screen_guards" as any) as any).delete().eq("id", id);
+    await revalidateCatalogMutation("mobile", { exactPaths: await getModelRevalidationPaths(selectedModel, "mobile") });
     fetchGuards(selectedModel); toast.success("Deleted");
   };
 
