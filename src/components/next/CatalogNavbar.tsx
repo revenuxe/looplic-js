@@ -21,12 +21,6 @@ export function CatalogNavbar() {
           <Link href="/brands" className="transition-colors hover:text-foreground">
             Brands
           </Link>
-          <Link href="/bangalore" className="transition-colors hover:text-foreground">
-            Bangalore
-          </Link>
-          <Link href="/tempered-glass" className="transition-colors hover:text-foreground">
-            Tempered Glass
-          </Link>
           <Link href="/service/mobile-repair" className="transition-colors hover:text-foreground">
             Repairs
           </Link>
@@ -52,12 +46,6 @@ export function CatalogNavbar() {
           <div className="container flex flex-col gap-3 py-4">
             <Link href="/brands" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               Brands
-            </Link>
-            <Link href="/bangalore" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
-              Bangalore
-            </Link>
-            <Link href="/tempered-glass" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
-              Tempered Glass
             </Link>
             <Link href="/service/mobile-repair" className="py-2 text-sm font-medium text-foreground" onClick={() => setOpen(false)}>
               Repairs

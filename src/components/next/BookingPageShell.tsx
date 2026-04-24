@@ -43,25 +43,27 @@ export function BookingPageShell({
     <div className="min-h-screen bg-background flex flex-col">
       <CatalogNavbar />
       <CatalogServiceTabs active={activeTab} />
-      <Suspense
+      <div className="flex-1 pb-14 sm:pb-20 lg:pb-24">
+        <Suspense
         fallback={
           <main className="flex flex-1 items-center justify-center p-6">
             <div className="text-sm text-muted-foreground">Loading booking flow...</div>
           </main>
         }
       >
-        <BookingStepFlow
-          brand={brand}
-          series={series}
-          model={model}
-          basePath={basePath}
-          isRepair={isRepair}
-          repairServiceType={repairServiceType}
-          guards={guards}
-          repairCategories={repairCategories}
-          repairSubcategories={repairSubcategories}
-        />
-      </Suspense>
+          <BookingStepFlow
+            brand={brand}
+            series={series}
+            model={model}
+            basePath={basePath}
+            isRepair={isRepair}
+            repairServiceType={repairServiceType}
+            guards={guards}
+            repairCategories={repairCategories}
+            repairSubcategories={repairSubcategories}
+          />
+        </Suspense>
+      </div>
       <HomepageFooter />
     </div>
   );
