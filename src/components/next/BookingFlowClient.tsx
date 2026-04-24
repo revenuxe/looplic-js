@@ -91,6 +91,7 @@ export function BookingFlowClient({
   const [timeSlot, setTimeSlot] = useState<(typeof TIME_SLOTS)[number] | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [bookedCode, setBookedCode] = useState("");
 
   const selectedOption = isRepair ? selectedSubcategory : selectedGuard;
   const selectedLabel = isRepair ? selectedSubcategory?.name || "" : displayGuardType(selectedGuard?.guard_type || "");
@@ -235,7 +236,7 @@ export function BookingFlowClient({
       guardType: !isRepair ? selectedGuard?.guard_type ?? null : null,
     });
 
-    const { error } = await supabase.from("bookings").insert(insertData);
+    const { data, error } = await supabase.from("bookings").insert(insertData).select("booking_code").single();
 
     if (error) {
       toast.error("Booking failed. Please try again.");
@@ -255,6 +256,7 @@ export function BookingFlowClient({
     }
 
     toast.success("Booking confirmed!");
+    setBookedCode(data?.booking_code || "");
     setBooked(true);
     setSubmitting(false);
   }
@@ -267,6 +269,7 @@ export function BookingFlowClient({
             <Check className="h-8 w-8 text-primary-foreground" />
           </div>
           <h2 className="mb-2 text-xl font-extrabold text-foreground">Booking Confirmed!</h2>
+          {bookedCode ? <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">{bookedCode}</p> : null}
           <p className="mb-1 text-sm text-muted-foreground">
             {selectedLabel} for <strong>{model.name}</strong>
           </p>

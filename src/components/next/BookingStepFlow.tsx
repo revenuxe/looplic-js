@@ -82,6 +82,7 @@ export function BookingStepFlow({
   const [timeSlot, setTimeSlot] = useState<(typeof TIME_SLOTS)[number] | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [bookedCode, setBookedCode] = useState("");
   const [optionSearch, setOptionSearch] = useState("");
 
   const stepParam = searchParams.get("step");
@@ -361,7 +362,7 @@ export function BookingStepFlow({
         repairSubcategoryId: isRepair ? selectedSubcategory?.id ?? null : null,
         guardType: !isRepair ? selectedGuard?.guard_type ?? null : null,
       }) as BookingInsert;
-    const { error } = await supabase.from("bookings").insert(insertData as any);
+    const { data, error } = await supabase.from("bookings").insert(insertData as any).select("booking_code").single();
 
     if (error) {
       toast.error(error.message || "Booking failed. Please try again.");
@@ -370,6 +371,7 @@ export function BookingStepFlow({
     }
 
     toast.success("Booking confirmed!");
+    setBookedCode(data?.booking_code || "");
     setBooked(true);
     setSubmitting(false);
   }
@@ -382,6 +384,7 @@ export function BookingStepFlow({
             <Check className="h-8 w-8 text-primary-foreground" />
           </div>
           <h2 className="mb-2 text-xl font-extrabold text-foreground">Booking Confirmed!</h2>
+          {bookedCode ? <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">{bookedCode}</p> : null}
           <p className="mb-1 text-sm text-muted-foreground">{selectedLabel} for <strong>{model.name}</strong></p>
           <p className="mb-1 text-xs text-muted-foreground">{scheduledDate} | {timeSlot}</p>
           <p className="mb-6 text-xs text-muted-foreground">We&apos;ll contact you at <strong>{phone}</strong> to confirm your slot.</p>
