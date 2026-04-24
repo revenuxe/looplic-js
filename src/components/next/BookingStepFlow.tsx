@@ -469,7 +469,7 @@ export function BookingStepFlow({
                 const label = displayGuardType(guard.guard_type);
                 return (
                   <button key={guard.id} onClick={() => continueAfterSelection({ guard: guard.id })} className="flex w-full items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/30 hover:shadow-card-brand">
-                    <span className="text-sm font-bold text-primary">{serviceBadges[label] || "Shield"}</span>
+                    {guard.image_url ? <img src={guard.image_url} alt={label} className="h-11 w-11 rounded-2xl object-contain border border-border/70 bg-background p-1.5" /> : <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-secondary text-sm font-bold text-primary">{serviceBadges[label] || "Shield"}</div>}
                     <div className="flex-1"><span className="text-sm font-bold text-foreground">{label}</span></div>
                     <div className="text-right"><span className="text-lg font-extrabold gradient-brand-text">Rs. {guard.price}</span></div>
                   </button>

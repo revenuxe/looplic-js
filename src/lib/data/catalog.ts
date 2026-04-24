@@ -32,6 +32,7 @@ export type CatalogModel = {
 export type ModelScreenGuard = {
   id: string;
   guard_type: string;
+  image_url: string | null;
   price: number;
 };
 
@@ -321,7 +322,7 @@ export const getModelScreenGuards = unstable_cache(async (modelId: string): Prom
     const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("model_screen_guards")
-      .select("id, guard_type, price")
+      .select("id, guard_type, image_url, price")
       .eq("model_id", modelId)
       .order("guard_type");
 

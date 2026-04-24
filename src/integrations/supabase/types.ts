@@ -209,6 +209,7 @@ export type Database = {
           created_at: string
           guard_type: string
           id: string
+          image_url: string | null
           model_id: string
           price: number
         }
@@ -216,6 +217,7 @@ export type Database = {
           created_at?: string
           guard_type: string
           id?: string
+          image_url?: string | null
           model_id: string
           price?: number
         }
@@ -223,6 +225,7 @@ export type Database = {
           created_at?: string
           guard_type?: string
           id?: string
+          image_url?: string | null
           model_id?: string
           price?: number
         }

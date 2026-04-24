@@ -286,7 +286,7 @@ export function BookingClientPage({
                       : "border-border bg-card shadow-card-brand hover:border-primary/30"
                   }`}
                 >
-                  <span className="text-sm font-bold text-primary">{guardIcons[label] || "Shield"}</span>
+                  {guard.image_url ? <img src={guard.image_url} alt={label} className="h-11 w-11 rounded-2xl object-contain border border-border/70 bg-background p-1.5" /> : <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-secondary text-sm font-bold text-primary">{guardIcons[label] || "Shield"}</div>}
                   <div className="flex-1">
                     <span className="text-sm font-bold text-foreground">{label}</span>
                   </div>

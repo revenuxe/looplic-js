@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/src/lib/supabase/client";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree, GripVertical
+  Plus, Trash2, Pencil, Loader2, X, Check, Shield, Tag, Smartphone, Layers, ChevronDown, Grid3X3, ListTree, GripVertical, Download, Upload
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { slugify } from "@/src/lib/slug";
 import { convertFileToWebp } from "@/src/lib/images/webp";
 import ImageUpload from "./ImageUpload";
@@ -14,12 +15,49 @@ const supabase = createClient() as any;
 type Brand = { id: string; name: string; letter: string; gradient: string; sort_order: number; image_url: string | null; service_type: string };
 type Series = { id: string; brand_id: string; name: string; image_url?: string | null };
 type Model = { id: string; series_id: string; name: string; image_url?: string | null };
-type Guard = { id: string; model_id: string; guard_type: string; price: number };
+type Guard = { id: string; model_id: string; guard_type: string; price: number; image_url?: string | null };
 type GuardCategory = { id: string; name: string };
 type GuardType = { id: string; category_id: string; name: string; image_url: string | null; price: number };
 
 const sortByName = <T extends { name: string }>(items: T[]) => [...items].sort((a, b) => a.name.localeCompare(b.name));
 const sortBrandsForAdmin = (items: Brand[]) => [...items].sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+const SCREEN_GUARD_IMPORT_TEMPLATE = [
+  { Model: "iPhone 14", Name: "Tempered Glass", "Image URL": "https://example.com/images/iphone-14-tempered-glass.webp", Price: 299 },
+  { Model: "Samsung Galaxy S23", Name: "Privacy Guard", "Image URL": "https://example.com/images/s23-privacy-guard.webp", Price: 399 },
+];
+
+const normalizeSheetValue = (value: unknown) => String(value ?? "").trim();
+const normalizeGuardKey = (value: string) => value.trim().toLowerCase();
+
+const downloadScreenGuardTemplate = () => {
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(SCREEN_GUARD_IMPORT_TEMPLATE);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "ScreenGuards");
+  XLSX.writeFile(workbook, "screen-guard-import-template.xlsx");
+};
+
+const parseScreenGuardImportFile = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const firstSheetName = workbook.SheetNames[0];
+
+  if (!firstSheetName) {
+    return [];
+  }
+
+  const worksheet = workbook.Sheets[firstSheetName];
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+    defval: "",
+    raw: false,
+  });
+
+  return rows.map((row) => ({
+    modelName: normalizeSheetValue(row.Model || row.model || row.MODEL),
+    guardName: normalizeSheetValue(row.Name || row.name || row["Guard Name"] || row.guard_name),
+    imageUrl: normalizeSheetValue(row["Image URL"] || row.image_url || row.image || row.Image),
+    priceText: normalizeSheetValue(row.Price || row.price),
+  }));
+};
 
 // ─── Reusable Modal ─────────────────────────────
 const Modal = ({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
@@ -1036,6 +1074,8 @@ const ModelGuardsTab = () => {
   const [categories, setCategories] = useState<GuardCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { supabase.from("brands").select("*").eq("service_type", "mobile").order("name").then(({ data }) => { if (data) setBrands(data as Brand[]); }); }, []);
   useEffect(() => { supabase.from("screen_guard_categories").select("*").order("name").then(({ data }) => { if (data) setCategories(data); }); }, []);
@@ -1056,7 +1096,7 @@ const ModelGuardsTab = () => {
     setSaving(true);
     const { data: guardTypes } = await supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name");
     if (!guardTypes || guardTypes.length === 0) { toast.error("No guard types in this category"); setSaving(false); return; }
-    const inserts = (guardTypes as GuardType[]).map(t => ({ model_id: selectedModel, guard_type: t.name, price: t.price }));
+    const inserts = (guardTypes as GuardType[]).map(t => ({ model_id: selectedModel, guard_type: t.name, image_url: t.image_url, price: t.price }));
     const { error } = await supabase.from("model_screen_guards").insert(inserts);
     if (error) toast.error(error.message); else { await revalidateCatalogMutation("mobile", { exactPaths: await getModelRevalidationPaths(selectedModel, "mobile") }); toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
@@ -1068,8 +1108,181 @@ const ModelGuardsTab = () => {
     fetchGuards(selectedModel); toast.success("Deleted");
   };
 
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
+
+    try {
+      const rows = await parseScreenGuardImportFile(file);
+      const validRows = rows.filter((row) => row.modelName || row.guardName || row.imageUrl || row.priceText);
+
+      if (validRows.length === 0) {
+        toast.error("The uploaded sheet is empty.");
+        return;
+      }
+
+      const { data: allModels, error: modelsError } = await supabase.from("models").select("id, name");
+      if (modelsError || !allModels) {
+        toast.error(modelsError?.message || "Unable to load models for import.");
+        return;
+      }
+
+      const modelMatches = new Map<string, Array<{ id: string; name: string }>>();
+      for (const model of allModels as Array<{ id: string; name: string }>) {
+        const key = normalizeGuardKey(model.name);
+        modelMatches.set(key, [...(modelMatches.get(key) || []), model]);
+      }
+
+      const matchedModelIds = Array.from(
+        new Set(
+          validRows
+            .map((row) => {
+              const matches = modelMatches.get(normalizeGuardKey(row.modelName));
+              return matches && matches.length === 1 ? matches[0].id : null;
+            })
+            .filter(Boolean),
+        ),
+      ) as string[];
+
+      const existingGuardsResponse = matchedModelIds.length
+        ? await supabase.from("model_screen_guards").select("id, model_id, guard_type, price").in("model_id", matchedModelIds)
+        : { data: [] as Array<{ id: string; model_id: string; guard_type: string; price: number }>, error: null };
+
+      if (existingGuardsResponse.error) {
+        toast.error(existingGuardsResponse.error.message || "Unable to load existing screen guards.");
+        return;
+      }
+
+      const existingGuardMap = new Map(
+        ((existingGuardsResponse.data as Array<{ id: string; model_id: string; guard_type: string; price: number }>) || []).map((guard) => [
+          `${guard.model_id}::${normalizeGuardKey(guard.guard_type)}`,
+          guard,
+        ]),
+      );
+
+      const touchedModelIds = new Set<string>();
+      let createdCount = 0;
+      let updatedCount = 0;
+      const skipped: string[] = [];
+
+      for (const [index, row] of validRows.entries()) {
+        if (!row.modelName || !row.guardName) {
+          skipped.push(`Row ${index + 2}: missing Model or Name`);
+          continue;
+        }
+
+        const matches = modelMatches.get(normalizeGuardKey(row.modelName)) || [];
+        if (matches.length === 0) {
+          skipped.push(`Row ${index + 2}: model "${row.modelName}" not found`);
+          continue;
+        }
+        if (matches.length > 1) {
+          skipped.push(`Row ${index + 2}: model "${row.modelName}" matched multiple records`);
+          continue;
+        }
+
+        const model = matches[0];
+        const priceValue = row.priceText ? Number(row.priceText) : null;
+        if (row.priceText && Number.isNaN(priceValue)) {
+          skipped.push(`Row ${index + 2}: invalid Price value`);
+          continue;
+        }
+
+        const guardKey = `${model.id}::${normalizeGuardKey(row.guardName)}`;
+        const existingGuard = existingGuardMap.get(guardKey);
+
+        if (existingGuard) {
+          const updatePayload: Record<string, unknown> = {
+            guard_type: row.guardName,
+            image_url: row.imageUrl || null,
+          };
+          if (priceValue !== null) {
+            updatePayload.price = priceValue;
+          }
+
+          const { error } = await (supabase.from("model_screen_guards" as any) as any).update(updatePayload).eq("id", existingGuard.id);
+          if (error) {
+            skipped.push(`Row ${index + 2}: ${error.message}`);
+            continue;
+          }
+          updatedCount += 1;
+        } else {
+          const { error } = await supabase.from("model_screen_guards").insert({
+            model_id: model.id,
+            guard_type: row.guardName,
+            image_url: row.imageUrl || null,
+            price: priceValue ?? 0,
+          } as any);
+          if (error) {
+            skipped.push(`Row ${index + 2}: ${error.message}`);
+            continue;
+          }
+          createdCount += 1;
+        }
+
+        touchedModelIds.add(model.id);
+      }
+
+      if (touchedModelIds.size > 0) {
+        const exactPaths = (
+          await Promise.all(Array.from(touchedModelIds).map((modelId) => getModelRevalidationPaths(modelId, "mobile")))
+        ).flat();
+        await revalidateCatalogMutation("mobile", { exactPaths });
+      }
+
+      if (selectedModel && touchedModelIds.has(selectedModel)) {
+        await fetchGuards(selectedModel);
+      }
+
+      if (createdCount || updatedCount) {
+        toast.success(`Import complete: ${createdCount} created, ${updatedCount} updated${skipped.length ? `, ${skipped.length} skipped` : ""}.`);
+      } else {
+        toast.error(skipped[0] || "No rows were imported.");
+      }
+
+      if (skipped.length) {
+        console.warn("Screen guard import skipped rows:", skipped);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to import this file.");
+    } finally {
+      setImporting(false);
+      if (importInputRef.current) {
+        importInputRef.current.value = "";
+      }
+    }
+  };
+
   return (
     <div>
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-card-brand">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-black text-foreground">Bulk Import Screen Guards</div>
+            <p className="mt-1 text-xs text-muted-foreground">Upload an Excel, CSV, or Google Sheets export with columns: Model, Name, Image URL, and optional Price.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={downloadScreenGuardTemplate} type="button" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground transition-colors hover:border-primary/30 hover:text-primary">
+              <Download className="h-3.5 w-3.5" /> Download Template
+            </button>
+            <button onClick={() => importInputRef.current?.click()} type="button" disabled={importing} className="inline-flex items-center gap-1.5 rounded-xl gradient-brand px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60">
+              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload Sheet
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleImportFile(file);
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div>
           <label className="text-[10px] font-semibold text-muted-foreground mb-1 block">Brand</label>
@@ -1130,6 +1343,7 @@ const ModelGuardsTab = () => {
         <div className="space-y-2">
           {guards.map((g) => (
             <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+              {g.image_url ? <img src={g.image_url} alt={g.guard_type} className="w-8 h-8 rounded-lg object-contain flex-shrink-0" /> : <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0"><Shield className="w-4 h-4 text-muted-foreground" /></div>}
               <div className="flex-1"><span className="text-sm font-bold text-foreground">{g.guard_type}</span><span className="ml-2 text-sm font-extrabold text-primary">₹{g.price}</span></div>
               <button onClick={() => handleDelete(g.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>
             </div>
