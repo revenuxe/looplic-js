@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import logo from "@/assets/looplic-logo.webp";
-import { encodeOAuthRedirectState, sanitizeRedirect } from "@/src/lib/auth-redirect";
+import { sanitizeRedirect } from "@/src/lib/auth-redirect";
 import { createClient } from "@/src/lib/supabase/client";
 
 export function AuthPageClient() {
@@ -30,8 +30,10 @@ export function AuthPageClient() {
       return undefined;
     }
 
-    return new URL("/auth/callback", window.location.origin).toString();
-  }, []);
+    const callback = new URL("/auth/callback", window.location.origin);
+    callback.searchParams.set("next", redirect);
+    return callback.toString();
+  }, [redirect]);
 
   useEffect(() => {
     let ignore = false;
@@ -103,7 +105,6 @@ export function AuthPageClient() {
         queryParams: {
           access_type: "offline",
           prompt: "select_account",
-          state: encodeOAuthRedirectState(redirect),
         },
       },
     });
@@ -125,7 +126,6 @@ export function AuthPageClient() {
       return;
     }
 
-    persistRedirect(redirect);
     setSubmitting("email");
 
     if (mode === "login") {
