@@ -376,9 +376,6 @@ export function BookingFlowClient({
                           )}
                           <div className="flex-1">
                             <span className="block text-sm font-bold text-foreground">{subcategory.name}</span>
-                            <span className="mt-1 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                              At-home repair service
-                            </span>
                           </div>
                           <div className="text-right">
                             <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
