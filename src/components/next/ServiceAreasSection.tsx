@@ -1,0 +1,85 @@
+import Link from "next/link";
+
+import { bangaloreAreas, buildBangaloreAreaRoute } from "@/src/lib/service-areas";
+
+export function ServiceAreasSection({ currentAreaSlug }: { currentAreaSlug?: string }) {
+  return (
+    <section className="border-t border-border bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,1))] py-12">
+      <div className="container max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-border bg-card p-6 shadow-card-brand">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary/80">Coverage</p>
+            <h2 className="mt-3 text-2xl font-black leading-tight text-foreground">
+              Doorstep Screen Guard Installation Areas We Serve
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              We cover core Bangalore neighborhoods with fast doorstep screen guard and tempered glass installation for popular phone models.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {bangaloreAreas.map((area) => {
+                const isActive = area.slug === currentAreaSlug;
+
+                return (
+                  <Link
+                    key={area.slug}
+                    href={buildBangaloreAreaRoute(area.slug)}
+                    className={`rounded-full border px-3 py-2 text-xs font-bold transition-all ${
+                      isActive
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-secondary/60 text-foreground hover:border-primary/30 hover:text-primary"
+                    }`}
+                  >
+                    {area.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-border bg-card p-6 shadow-card-brand">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-primary/80">Repair Coverage</p>
+            <h2 className="mt-3 text-2xl font-black leading-tight text-foreground">
+              Doorstep Repair Pickup and Delivery Available in Bangalore
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              Pickup and delivery support is available across Bangalore for both mobile and laptop repair bookings. Use the service pages below to start the right repair flow.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                href="/service/mobile-repair"
+                className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-all hover:border-primary/30 hover:text-primary"
+              >
+                Mobile Repair
+              </Link>
+              <Link
+                href="/service/laptop-repair"
+                className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-all hover:border-primary/30 hover:text-primary"
+              >
+                Laptop Repair
+              </Link>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {bangaloreAreas.map((area) => {
+                const isActive = area.slug === currentAreaSlug;
+
+                return (
+                  <Link
+                    key={`repair-${area.slug}`}
+                    href={buildBangaloreAreaRoute(area.slug)}
+                    className={`rounded-full border px-3 py-2 text-xs font-bold transition-all ${
+                      isActive
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-secondary/60 text-foreground hover:border-primary/30 hover:text-primary"
+                    }`}
+                  >
+                    {area.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

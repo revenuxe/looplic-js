@@ -1225,8 +1225,25 @@ const ModelGuardsTab = () => {
   useEffect(() => { if (selectedBrand) { supabase.from("series").select("*").eq("brand_id", selectedBrand).order("name").then(({ data }) => { if (data) setSeriesList(data as any); }); } else setSeriesList([]); setSelectedSeries(""); }, [selectedBrand]);
   useEffect(() => { if (selectedSeries) { supabase.from("models").select("*").eq("series_id", selectedSeries).order("name").then(({ data }) => { if (data) setModels(data as any); }); } else setModels([]); setSelectedModel(""); }, [selectedSeries]);
 
+  const loadTypeImageMap = async () => {
+    const { data, error } = await supabase
+      .from("screen_guard_types")
+      .select("name, image_url");
+
+    if (error || !data) {
+      return new Map<string, string>();
+    }
+
+    return new Map(
+      data
+        .filter((item) => typeof item.image_url === "string" && item.image_url.trim())
+        .map((item) => [item.name.trim().toLowerCase(), item.image_url!.trim()]),
+    );
+  };
+
   const fetchGuards = async (modelId: string) => {
     setLoading(true);
+    const typeImageMap = await loadTypeImageMap();
     const primaryQuery = await supabase
       .from("model_screen_guards")
       .select("*")
@@ -1238,7 +1255,12 @@ const ModelGuardsTab = () => {
       primaryQuery.error.message.includes("model_screen_guards");
 
     if (!primaryQuery.error && primaryQuery.data) {
-      setGuards(primaryQuery.data);
+      setGuards(
+        primaryQuery.data.map((guard) => ({
+          ...guard,
+          image_url: guard.image_url || typeImageMap.get(guard.guard_type.trim().toLowerCase()) || null,
+        })),
+      );
     } else if (missingImageUrlColumn) {
       const fallbackQuery = await (supabase.from("model_screen_guards") as any)
         .select("id, model_id, guard_type, price, created_at")
@@ -1249,7 +1271,7 @@ const ModelGuardsTab = () => {
         setGuards(
           fallbackQuery.data.map((guard: any) => ({
             ...guard,
-            image_url: null,
+            image_url: typeImageMap.get(guard.guard_type.trim().toLowerCase()) || null,
           })),
         );
       } else {

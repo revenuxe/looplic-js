@@ -90,6 +90,23 @@ const fallbackBrands: CatalogBrand[] = [
 
 export const CATALOG_REVALIDATE_SECONDS = 300;
 
+async function getScreenGuardTypeImageMap() {
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from("screen_guard_types")
+    .select("name, image_url");
+
+  if (error || !data) {
+    return new Map<string, string>();
+  }
+
+  return new Map(
+    data
+      .filter((item) => typeof item.image_url === "string" && item.image_url.trim())
+      .map((item) => [item.name.trim().toLowerCase(), item.image_url!.trim()]),
+  );
+}
+
 async function queryBrands(serviceType: "mobile" | "laptop") {
   const supabase = createPublicClient();
   const withSlug = await supabase
@@ -320,6 +337,7 @@ export const getModelBySlug = unstable_cache(async (seriesId: string, modelSlug:
 export const getModelScreenGuards = unstable_cache(async (modelId: string): Promise<ModelScreenGuard[]> => {
   try {
     const supabase = createPublicClient();
+    const typeImageMap = await getScreenGuardTypeImageMap();
     const primaryQuery = await supabase
       .from("model_screen_guards")
       .select("id, guard_type, image_url, price")
@@ -327,7 +345,10 @@ export const getModelScreenGuards = unstable_cache(async (modelId: string): Prom
       .order("guard_type");
 
     if (!primaryQuery.error && primaryQuery.data) {
-      return primaryQuery.data;
+      return primaryQuery.data.map((guard) => ({
+        ...guard,
+        image_url: guard.image_url || typeImageMap.get(guard.guard_type.trim().toLowerCase()) || null,
+      }));
     }
 
     const missingImageUrlColumn =
@@ -350,7 +371,7 @@ export const getModelScreenGuards = unstable_cache(async (modelId: string): Prom
 
     return fallbackQuery.data.map((guard) => ({
       ...guard,
-      image_url: null,
+      image_url: typeImageMap.get(guard.guard_type.trim().toLowerCase()) || null,
     }));
   } catch {
     return [];

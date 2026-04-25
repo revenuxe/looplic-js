@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getCatalogSearchIndex } from "@/src/lib/data/catalog";
+import { bangaloreAreas, buildBangaloreAreaRoute } from "@/src/lib/service-areas";
 import { siteConfig } from "@/src/lib/site";
 
 export const revalidate = 300;
@@ -54,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     createEntry("/", 1, "daily"),
     createEntry("/bangalore", 0.8, "daily"),
     createEntry("/tempered-glass", 0.8, "daily"),
+    ...bangaloreAreas.map((area) => createEntry(buildBangaloreAreaRoute(area.slug), 0.7, "weekly")),
     createEntry("/about-us", 0.4, "monthly"),
     createEntry("/contact-us", 0.5, "monthly"),
     createEntry("/privacy-policy", 0.2, "yearly"),

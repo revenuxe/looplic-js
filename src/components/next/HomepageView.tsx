@@ -4,6 +4,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { HomepageHeroSection } from "@/src/components/next/HomepageHeroSection";
 import { HomepageNavbar } from "@/src/components/next/HomepageNavbar";
 import { HomepageServiceTabs } from "@/src/components/next/HomepageServiceTabs";
+import { ServiceAreasSection } from "@/src/components/next/ServiceAreasSection";
 import { ScreenGuardTypes } from "@/src/components/next/ScreenGuardTypes";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
 import type { CatalogBrand, SearchModel, SearchSeries } from "@/src/lib/data/catalog";
@@ -18,6 +19,7 @@ export function HomepageView({
   heroEyebrow,
   heroBrowseHref,
   heroSearchPlaceholder,
+  currentAreaSlug,
 }: {
   brands: CatalogBrand[];
   searchBrands: CatalogBrand[];
@@ -28,6 +30,7 @@ export function HomepageView({
   heroEyebrow?: string;
   heroBrowseHref?: string;
   heroSearchPlaceholder?: string;
+  currentAreaSlug?: string;
 }) {
   return (
     <div className="min-h-screen bg-background">
@@ -48,6 +51,7 @@ export function HomepageView({
       <ScreenGuardTypes />
       <HowItWorks />
       <TrustSignals />
+      <ServiceAreasSection currentAreaSlug={currentAreaSlug} />
       <HomepageFooter />
     </div>
   );
