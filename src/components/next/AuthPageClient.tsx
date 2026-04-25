@@ -84,6 +84,16 @@ export function AuthPageClient() {
     setMode(initialMode);
   }, [initialMode]);
 
+  function navigateAfterAuth(target: string) {
+    if (typeof window !== "undefined") {
+      window.location.assign(target);
+      return;
+    }
+
+    router.replace(target);
+    router.refresh();
+  }
+
   function setAuthMode(nextMode: "login" | "signup") {
     setMode(nextMode);
     const nextQuery = new URLSearchParams(searchParams.toString());
@@ -143,8 +153,7 @@ export function AuthPageClient() {
       }
 
       toast.success("Welcome back!");
-      router.replace(redirect);
-      router.refresh();
+      navigateAfterAuth(redirect);
       setSubmitting(null);
       return;
     }
@@ -178,11 +187,11 @@ export function AuthPageClient() {
 
     toast.success(data.session ? "Account created!" : "Account created. Verify your email to complete sign in.");
     if (data.session) {
-      router.replace(redirect);
+      navigateAfterAuth(redirect);
     } else {
       router.replace("/");
+      router.refresh();
     }
-    router.refresh();
     setSubmitting(null);
   }
 
