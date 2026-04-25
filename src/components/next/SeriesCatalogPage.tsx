@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
+import { ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -98,15 +98,16 @@ export function SeriesCatalogPage({
                 key={series.id}
                 href={`${seriesPathPrefix}/${series.slug}`}
                 eagerPrefetch={!search}
-                className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-[0.98]"
+                className="group flex items-center rounded-2xl border border-border bg-card p-4 shadow-card-brand transition-all hover:border-primary/30 hover:shadow-elevated-brand active:scale-[0.98]"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-secondary">
                     <DeviceIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-sm font-bold text-foreground">{series.name}</span>
+                  <span className="whitespace-normal break-words text-sm font-bold leading-tight text-foreground">
+                    {series.name}
+                  </span>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
               </CatalogPrefetchLink>
             ))}
           </div>

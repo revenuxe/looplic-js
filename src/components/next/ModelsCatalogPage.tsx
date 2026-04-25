@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Laptop, Smartphone } from "lucide-react";
+import { ChevronRight, Laptop, Smartphone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -117,9 +117,10 @@ export function ModelsCatalogPage({
                     <DeviceIcon className="h-7 w-7 text-primary" />
                   </div>
                 )}
-                <div className="flex w-full items-center gap-1.5">
-                  <span className="flex-1 truncate text-center text-xs font-bold text-foreground">{model.name}</span>
-                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                <div className="w-full">
+                  <span className="block whitespace-normal break-words text-center text-xs font-bold leading-tight text-foreground">
+                    {model.name}
+                  </span>
                 </div>
               </CatalogPrefetchLink>
             ))}
