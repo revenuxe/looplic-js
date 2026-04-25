@@ -320,17 +320,38 @@ export const getModelBySlug = unstable_cache(async (seriesId: string, modelSlug:
 export const getModelScreenGuards = unstable_cache(async (modelId: string): Promise<ModelScreenGuard[]> => {
   try {
     const supabase = createPublicClient();
-    const { data, error } = await supabase
+    const primaryQuery = await supabase
       .from("model_screen_guards")
       .select("id, guard_type, image_url, price")
       .eq("model_id", modelId)
       .order("guard_type");
 
-    if (error || !data) {
+    if (!primaryQuery.error && primaryQuery.data) {
+      return primaryQuery.data;
+    }
+
+    const missingImageUrlColumn =
+      primaryQuery.error?.message?.includes("image_url") &&
+      primaryQuery.error.message.includes("model_screen_guards");
+
+    if (!missingImageUrlColumn) {
       return [];
     }
 
-    return data;
+    const fallbackQuery = await supabase
+      .from("model_screen_guards")
+      .select("id, guard_type, price")
+      .eq("model_id", modelId)
+      .order("guard_type");
+
+    if (fallbackQuery.error || !fallbackQuery.data) {
+      return [];
+    }
+
+    return fallbackQuery.data.map((guard) => ({
+      ...guard,
+      image_url: null,
+    }));
   } catch {
     return [];
   }

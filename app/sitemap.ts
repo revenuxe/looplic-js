@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 
-import { CATALOG_REVALIDATE_SECONDS, getCatalogSearchIndex } from "@/src/lib/data/catalog";
+import { getCatalogSearchIndex } from "@/src/lib/data/catalog";
 import { siteConfig } from "@/src/lib/site";
 
-export const revalidate = CATALOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 

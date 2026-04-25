@@ -6,6 +6,7 @@ import { getRepairCatalogData, resolveModelPageData } from "@/src/lib/data/catal
 import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{

@@ -1227,8 +1227,38 @@ const ModelGuardsTab = () => {
 
   const fetchGuards = async (modelId: string) => {
     setLoading(true);
-    const { data } = await supabase.from("model_screen_guards").select("*").eq("model_id", modelId).order("guard_type");
-    if (data) setGuards(data);
+    const primaryQuery = await supabase
+      .from("model_screen_guards")
+      .select("*")
+      .eq("model_id", modelId)
+      .order("guard_type");
+
+    const missingImageUrlColumn =
+      primaryQuery.error?.message?.includes("image_url") &&
+      primaryQuery.error.message.includes("model_screen_guards");
+
+    if (!primaryQuery.error && primaryQuery.data) {
+      setGuards(primaryQuery.data);
+    } else if (missingImageUrlColumn) {
+      const fallbackQuery = await (supabase.from("model_screen_guards") as any)
+        .select("id, model_id, guard_type, price, created_at")
+        .eq("model_id", modelId)
+        .order("guard_type");
+
+      if (fallbackQuery.data) {
+        setGuards(
+          fallbackQuery.data.map((guard: any) => ({
+            ...guard,
+            image_url: null,
+          })),
+        );
+      } else {
+        setGuards([]);
+      }
+    } else {
+      setGuards([]);
+    }
+
     setLoading(false);
   };
 
@@ -1240,7 +1270,23 @@ const ModelGuardsTab = () => {
     const { data: guardTypes } = await supabase.from("screen_guard_types").select("*").eq("category_id", selectedCategory).order("name");
     if (!guardTypes || guardTypes.length === 0) { toast.error("No guard types in this category"); setSaving(false); return; }
     const inserts = (guardTypes as GuardType[]).map(t => ({ model_id: selectedModel, guard_type: t.name, image_url: t.image_url, price: t.price }));
-    const { error } = await supabase.from("model_screen_guards").insert(inserts);
+    let { error } = await supabase.from("model_screen_guards").insert(inserts);
+
+    const missingImageUrlColumn =
+      error?.message?.includes("image_url") &&
+      error.message.includes("model_screen_guards");
+
+    if (missingImageUrlColumn) {
+      const fallbackInserts = (guardTypes as GuardType[]).map((t) => ({
+        model_id: selectedModel,
+        guard_type: t.name,
+        price: t.price,
+      }));
+
+      const fallbackResult = await (supabase.from("model_screen_guards") as any).insert(fallbackInserts);
+      error = fallbackResult.error;
+    }
+
     if (error) toast.error(error.message); else { await revalidateCatalogMutation("mobile", { exactPaths: await getModelRevalidationPaths(selectedModel, "mobile") }); toast.success(`${inserts.length} guards assigned`); setShowAdd(false); setSelectedCategory(""); fetchGuards(selectedModel); }
     setSaving(false);
   };

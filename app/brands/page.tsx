@@ -8,6 +8,7 @@ import { getBrandsForListing } from "@/src/lib/data/catalog";
 import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Mobile Brands for Screen Guard Installation",

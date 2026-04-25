@@ -5,6 +5,7 @@ import { getBrandsForListing, getCatalogSearchIndex } from "@/src/lib/data/catal
 import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Doorstep Screen Guard Installation for Mobile Phones",
