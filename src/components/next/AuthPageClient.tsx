@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import logo from "@/assets/looplic-logo.webp";
-import { sanitizeRedirect } from "@/src/lib/auth-redirect";
+import { OAUTH_REDIRECT_COOKIE, sanitizeRedirect } from "@/src/lib/auth-redirect";
 import { createClient } from "@/src/lib/supabase/client";
 
 export function AuthPageClient() {
@@ -97,6 +97,8 @@ export function AuthPageClient() {
     }
 
     setSubmitting("google");
+
+    document.cookie = `${OAUTH_REDIRECT_COOKIE}=${encodeURIComponent(redirect)}; Path=/; Max-Age=600; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

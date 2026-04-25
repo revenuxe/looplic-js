@@ -2,6 +2,8 @@ type OAuthRedirectState = {
   redirectTo?: string;
 };
 
+export const OAUTH_REDIRECT_COOKIE = "looplic-auth-redirect";
+
 export function sanitizeRedirect(value: string | null | undefined) {
   if (!value || !value.startsWith("/")) {
     return "/";
