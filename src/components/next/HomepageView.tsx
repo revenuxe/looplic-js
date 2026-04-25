@@ -35,7 +35,7 @@ export function HomepageView({
   return (
     <div className="min-h-screen bg-background">
       <HomepageNavbar />
-      <HomepageServiceTabs />
+      <HomepageServiceTabs currentAreaSlug={currentAreaSlug} />
       <HomepageHeroSection
         brands={brands.slice(0, 6)}
         searchBrands={searchBrands}

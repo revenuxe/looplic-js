@@ -12,6 +12,10 @@ type ServiceLandingPageProps = {
   brands: CatalogBrand[];
   searchSeries: SearchSeries[];
   searchModels: SearchModel[];
+  eyebrow?: string;
+  heroTitle?: string;
+  heroDescription?: string;
+  searchPlaceholder?: string;
 };
 
 const serviceConfig = {
@@ -41,7 +45,16 @@ const stats = [
   { value: "30min", label: "Service" },
 ];
 
-export function ServiceLandingPage({ serviceType, brands, searchSeries, searchModels }: ServiceLandingPageProps) {
+export function ServiceLandingPage({
+  serviceType,
+  brands,
+  searchSeries,
+  searchModels,
+  eyebrow,
+  heroTitle,
+  heroDescription,
+  searchPlaceholder,
+}: ServiceLandingPageProps) {
   const config = serviceConfig[serviceType];
 
   const heroBrands = brands.slice(0, 6);
@@ -57,13 +70,22 @@ export function ServiceLandingPage({ serviceType, brands, searchSeries, searchMo
 
         <div className="container relative z-10">
           <div className="mx-auto max-w-lg text-center">
+            {eyebrow ? (
+              <p className="mb-3 text-[11px] font-black uppercase tracking-[0.24em] text-primary/80">
+                {eyebrow}
+              </p>
+            ) : null}
             <h1 className="px-4 text-[26px] font-extrabold leading-[1.15] tracking-tight text-foreground md:text-5xl">
-              {config.title} <span className="mt-1 block gradient-brand-text">{config.subtitle.split(" ").slice(-4).join(" ")}</span>
+              {heroTitle ?? (
+                <>
+                  {config.title} <span className="mt-1 block gradient-brand-text">{config.subtitle.split(" ").slice(-4).join(" ")}</span>
+                </>
+              )}
             </h1>
-            <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{config.subtitle}</p>
+            <p className="mx-auto mt-3 max-w-xs text-[13px] leading-relaxed text-muted-foreground">{heroDescription ?? config.subtitle}</p>
 
             <DeviceSearchBox
-              placeholder={config.searchPlaceholder}
+              placeholder={searchPlaceholder ?? config.searchPlaceholder}
               browseHref={config.allHref}
               brands={brands}
               series={searchSeries}

@@ -1,8 +1,17 @@
 import Link from "next/link";
 
-import { bangaloreAreas, buildBangaloreAreaRoute } from "@/src/lib/service-areas";
+import { bangaloreAreas, buildBangaloreAreaRoute, buildBangaloreAreaServiceRoute } from "@/src/lib/service-areas";
 
-export function ServiceAreasSection({ currentAreaSlug }: { currentAreaSlug?: string }) {
+export function ServiceAreasSection({
+  currentAreaSlug,
+  currentRepairServiceType,
+}: {
+  currentAreaSlug?: string;
+  currentRepairServiceType?: "mobile-repair" | "laptop-repair";
+}) {
+  const mobileRepairHref = currentAreaSlug ? buildBangaloreAreaServiceRoute(currentAreaSlug, "mobile-repair") : "/service/mobile-repair";
+  const laptopRepairHref = currentAreaSlug ? buildBangaloreAreaServiceRoute(currentAreaSlug, "laptop-repair") : "/service/laptop-repair";
+
   return (
     <section className="border-t border-border bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,1))] py-12">
       <div className="container max-w-6xl px-4 sm:px-6">
@@ -46,13 +55,13 @@ export function ServiceAreasSection({ currentAreaSlug }: { currentAreaSlug?: str
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
-                href="/service/mobile-repair"
+                href={mobileRepairHref}
                 className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-all hover:border-primary/30 hover:text-primary"
               >
                 Mobile Repair
               </Link>
               <Link
-                href="/service/laptop-repair"
+                href={laptopRepairHref}
                 className="rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-foreground transition-all hover:border-primary/30 hover:text-primary"
               >
                 Laptop Repair
@@ -65,7 +74,7 @@ export function ServiceAreasSection({ currentAreaSlug }: { currentAreaSlug?: str
                 return (
                   <Link
                     key={`repair-${area.slug}`}
-                    href={buildBangaloreAreaRoute(area.slug)}
+                    href={currentRepairServiceType ? buildBangaloreAreaServiceRoute(area.slug, currentRepairServiceType) : buildBangaloreAreaRoute(area.slug)}
                     className={`rounded-full border px-3 py-2 text-xs font-bold transition-all ${
                       isActive
                         ? "border-primary bg-primary text-primary-foreground"

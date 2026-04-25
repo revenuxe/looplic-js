@@ -1,4 +1,5 @@
 import { slugify } from "@/src/lib/slug";
+import type { ServiceType } from "@/src/lib/routes";
 
 const bangaloreAreaNames = [
   "BTM Layout",
@@ -96,4 +97,12 @@ export function getBangaloreAreaBySlug(areaSlug: string) {
 
 export function buildBangaloreAreaRoute(areaSlug: string) {
   return `/bangalore/${areaSlug}`;
+}
+
+export function buildBangaloreAreaServiceRoute(areaSlug: string, serviceType: ServiceType) {
+  if (serviceType === "screen-guard") {
+    return buildBangaloreAreaRoute(areaSlug);
+  }
+
+  return `/bangalore/${areaSlug}/service/${serviceType}`;
 }

@@ -1,6 +1,8 @@
 import { Laptop, Shield, Smartphone } from "lucide-react";
 import Link from "next/link";
 
+import { buildBangaloreAreaServiceRoute } from "@/src/lib/service-areas";
+
 type TabKey = "screen-guard" | "mobile-repair" | "laptop-repair";
 
 const services = [
@@ -9,7 +11,7 @@ const services = [
   { id: "laptop-repair", label: "Laptop Repair", shortLabel: "Laptop", href: "/service/laptop-repair", icon: Laptop, color: "from-violet-500 to-purple-600" },
 ] as const;
 
-export function CatalogServiceTabs({ active }: { active: TabKey }) {
+export function CatalogServiceTabs({ active, currentAreaSlug }: { active: TabKey; currentAreaSlug?: string }) {
   return (
     <section className="sticky top-14 z-40 border-b border-border bg-card/80 backdrop-blur-md">
       <div className="container">
@@ -17,11 +19,12 @@ export function CatalogServiceTabs({ active }: { active: TabKey }) {
           {services.map((service) => {
             const Icon = service.icon;
             const isActive = service.id === active;
+            const href = currentAreaSlug ? buildBangaloreAreaServiceRoute(currentAreaSlug, service.id) : service.href;
 
             return (
               <Link
                 key={service.id}
-                href={service.href}
+                href={href}
                 className={`relative flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all duration-300 sm:gap-2 sm:px-5 sm:text-sm ${
                   isActive ? "text-primary" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
