@@ -8,6 +8,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ServiceLandingPage } from "@/src/components/next/ServiceLandingPage";
 import { TrustSignals } from "@/src/components/next/TrustSignals";
 import { getBrandsForListing, getCatalogSearchIndex } from "@/src/lib/data/catalog";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -22,11 +23,13 @@ const serviceMap = {
     listingType: "mobile" as const,
     label: "Mobile Repair",
     activeTab: "mobile-repair" as const,
+    pathname: "/service/mobile-repair",
   },
   "laptop-repair": {
     listingType: "laptop" as const,
     label: "Laptop Repair",
     activeTab: "laptop-repair" as const,
+    pathname: "/service/laptop-repair",
   },
 };
 
@@ -40,10 +43,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  return {
-    title: config.label,
-    description: `Browse supported brands and start the ${config.label.toLowerCase()} booking flow with dedicated SSR landing pages.`,
-  };
+  return buildPageMetadata({
+    title: `${config.label} at Your Doorstep`,
+    description: `Browse supported brands and start your ${config.label.toLowerCase()} booking with device-wise routes and doorstep service support.`,
+    pathname: config.pathname,
+    keywords: [config.label.toLowerCase(), `${config.label.toLowerCase()} booking`, `doorstep ${config.label.toLowerCase()}`],
+  });
 }
 
 export default async function ServicePage({ params }: PageProps) {

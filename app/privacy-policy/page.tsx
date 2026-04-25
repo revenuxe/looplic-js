@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 
 import { InfoPageLayout } from "@/src/components/next/InfoPageLayout";
 import { companyName, supportEmail, supportPhoneDisplay } from "@/src/lib/company";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Privacy Policy",
-  description: `Read the ${companyName} Privacy Policy covering personal information, order data, support communication, security, and customer rights.`,
-};
+  description: `Read the ${companyName} Privacy Policy covering personal information, bookings, support communication, security, and customer privacy rights.`,
+  pathname: "/privacy-policy",
+});
 
 const sections = [
   {

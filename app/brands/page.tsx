@@ -5,13 +5,17 @@ import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { CatalogServiceTabs } from "@/src/components/next/CatalogServiceTabs";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { getBrandsForListing } from "@/src/lib/data/catalog";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "All Mobile Brands",
-  description: "Browse all supported phone brands for screen guard installation with dedicated SEO-ready routes.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Mobile Brands for Screen Guard Installation",
+  description:
+    "Browse all supported phone brands and find your device to book tempered glass and screen guard installation at your doorstep.",
+  pathname: "/brands",
+  keywords: ["mobile brands", "screen guard brands", "phone model search", "tempered glass booking"],
+});
 
 export default async function BrandsPage() {
   const brands = await getBrandsForListing("mobile");

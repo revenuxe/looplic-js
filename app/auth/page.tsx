@@ -4,11 +4,14 @@ import { Suspense } from "react";
 import { AuthPageClient } from "@/src/components/next/AuthPageClient";
 import { CatalogNavbar } from "@/src/components/next/CatalogNavbar";
 import { HomepageFooter } from "@/src/components/next/HomepageFooter";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Sign In",
-  description: "Sign in or create an account to track your Looplic bookings.",
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: "Sign In to Looplic",
+  description: "Sign in or create a Looplic account to manage bookings, track orders, and access your device service details.",
+  pathname: "/auth",
+  noIndex: true,
+});
 
 export default function AuthPage() {
   return (

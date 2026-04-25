@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 
 import "@/app/globals.css";
 import { AppProviders } from "@/components/Providers";
+import { siteConfig } from "@/src/lib/site";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -11,16 +12,17 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.looplic.com"),
+  metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Looplic",
+    default: "Screen Guard Installation & Device Repair at Home",
     template: "%s | Looplic",
   },
-  description: "Doorstep screen guard installation and repair booking platform for mobile and laptop devices.",
+  description: siteConfig.description,
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
   },
+  applicationName: siteConfig.name,
 };
 
 export default function RootLayout({

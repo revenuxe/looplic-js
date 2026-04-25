@@ -7,6 +7,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ModelsCatalogPage } from "@/src/components/next/ModelsCatalogPage";
 import { getModelsForSeries } from "@/src/lib/data/catalog";
 import { resolveSeriesPageData } from "@/src/lib/data/catalog-page";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -23,11 +24,13 @@ const serviceMap = {
     listingType: "mobile" as const,
     label: "Mobile Repair",
     activeTab: "mobile-repair" as const,
+    pathPrefix: "/service/mobile-repair/brands",
   },
   "laptop-repair": {
     listingType: "laptop" as const,
     label: "Laptop Repair",
     activeTab: "laptop-repair" as const,
+    pathPrefix: "/service/laptop-repair/brands",
   },
 };
 
@@ -53,10 +56,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  return {
+  return buildPageMetadata({
     title: `${brand.name} ${series.name} ${config.label}`,
-    description: `Browse all ${brand.name} ${series.name} models supported for ${config.label.toLowerCase()} and continue into dedicated booking pages.`,
-  };
+    description: `Browse ${brand.name} ${series.name} models supported for ${config.label.toLowerCase()} and continue to device-specific doorstep service booking.`,
+    pathname: `${config.pathPrefix}/${brand.slug}/${series.slug}`,
+  });
 }
 
 export default async function ServiceSeriesPage({ params }: PageProps) {

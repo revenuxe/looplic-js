@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
 import { getRepairCatalogData, resolveModelPageData } from "@/src/lib/data/catalog-page";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -20,11 +21,13 @@ const serviceMap = {
     listingType: "mobile" as const,
     label: "Mobile Repair",
     activeTab: "mobile-repair" as const,
+    pathPrefix: "/service/mobile-repair/book",
   },
   "laptop-repair": {
     listingType: "laptop" as const,
     label: "Laptop Repair",
     activeTab: "laptop-repair" as const,
+    pathPrefix: "/service/laptop-repair/book",
   },
 };
 
@@ -47,10 +50,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: `${brand.name} ${series.name}` };
   }
 
-  return {
+  return buildPageMetadata({
     title: `${brand.name} ${model.name} ${config.label}`,
-    description: `Choose a ${config.label.toLowerCase()} service and book doorstep support for ${brand.name} ${model.name}.`,
-  };
+    description: `Choose the right ${config.label.toLowerCase()} service and book doorstep support for ${brand.name} ${model.name}.`,
+    pathname: `${config.pathPrefix}/${brand.slug}/${series.slug}/${model.slug}`,
+    keywords: [`${brand.name} ${model.name} ${config.label.toLowerCase()}`, `${brand.name} ${model.name} repair booking`],
+  });
 }
 
 export default async function ServiceBookingPage({ params }: PageProps) {

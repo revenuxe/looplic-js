@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BookingPageShell } from "@/src/components/next/BookingPageShell";
 import { getModelScreenGuards } from "@/src/lib/data/catalog";
 import { resolveModelPageData } from "@/src/lib/data/catalog-page";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -29,10 +30,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: `${brand.name} ${series.name}` };
   }
 
-  return {
-    title: `${brand.name} ${model.name} Screen Guard`,
-    description: `Choose a screen guard and book doorstep installation for ${brand.name} ${model.name}.`,
-  };
+  return buildPageMetadata({
+    title: `${brand.name} ${model.name} Screen Guard Installation`,
+    description: `Choose tempered glass or screen guard options and book doorstep installation for ${brand.name} ${model.name}.`,
+    pathname: `/brands/${brand.slug}/${series.slug}/${model.slug}`,
+    keywords: [
+      `${brand.name} ${model.name} screen guard`,
+      `${brand.name} ${model.name} tempered glass`,
+      `${brand.name} ${model.name} installation`,
+    ],
+  });
 }
 
 export default async function ModelPage({ params }: PageProps) {

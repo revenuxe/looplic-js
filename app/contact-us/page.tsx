@@ -4,11 +4,13 @@ import Image from "next/image";
 
 import { InfoPageLayout } from "@/src/components/next/InfoPageLayout";
 import { companyName, supportEmail, supportPhone, supportPhoneDisplay, whatsappUrl } from "@/src/lib/company";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "Contact Us",
-  description: `Get in touch with ${companyName} for bookings, customer support, order updates, and general assistance.`,
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: `Contact ${companyName}`,
+  description: `Contact ${companyName} for booking help, customer support, order updates, WhatsApp assistance, and general service enquiries.`,
+  pathname: "/contact-us",
+});
 
 export default function ContactUsPage() {
   return (

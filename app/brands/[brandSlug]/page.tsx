@@ -7,6 +7,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { SeriesCatalogPage } from "@/src/components/next/SeriesCatalogPage";
 import { getSeriesForBrand } from "@/src/lib/data/catalog";
 import { resolveBrandPageData } from "@/src/lib/data/catalog-page";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -26,10 +27,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  return {
-    title: `${brand.name} Phone Series`,
-    description: `Browse all ${brand.name} phone series for screen guard installation and model-level booking routes.`,
-  };
+  return buildPageMetadata({
+    title: `${brand.name} Screen Guard Installation`,
+    description: `Browse ${brand.name} phone series and find your exact model to book doorstep tempered glass and screen guard installation.`,
+    pathname: `/brands/${brand.slug}`,
+    keywords: [`${brand.name} screen guard`, `${brand.name} tempered glass`, `${brand.name} phone models`],
+  });
 }
 
 export default async function BrandPage({ params }: PageProps) {

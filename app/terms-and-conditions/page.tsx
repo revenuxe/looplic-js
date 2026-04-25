@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 
 import { InfoPageLayout } from "@/src/components/next/InfoPageLayout";
 import { companyName, supportEmail, supportPhoneDisplay } from "@/src/lib/company";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "Terms and Conditions",
   description: `Read the ${companyName} Terms and Conditions for platform use, bookings, cancellations, customer responsibilities, liability limits, and service policies.`,
-};
+  pathname: "/terms-and-conditions",
+});
 
 const sections = [
   {

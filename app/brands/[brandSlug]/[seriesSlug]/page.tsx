@@ -7,6 +7,7 @@ import { HomepageFooter } from "@/src/components/next/HomepageFooter";
 import { ModelsCatalogPage } from "@/src/components/next/ModelsCatalogPage";
 import { getModelsForSeries } from "@/src/lib/data/catalog";
 import { resolveSeriesPageData } from "@/src/lib/data/catalog-page";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
 export const revalidate = 300;
 
@@ -33,10 +34,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  return {
-    title: `${brand.name} ${series.name} Models`,
-    description: `Browse all ${brand.name} ${series.name} models for screen guard installation and dedicated booking pages.`,
-  };
+  return buildPageMetadata({
+    title: `${brand.name} ${series.name} Screen Guard Installation`,
+    description: `Find all ${brand.name} ${series.name} models and book doorstep screen guard or tempered glass installation for your device.`,
+    pathname: `/brands/${brand.slug}/${series.slug}`,
+    keywords: [`${brand.name} ${series.name} screen guard`, `${brand.name} ${series.name} tempered glass`],
+  });
 }
 
 export default async function SeriesPage({ params }: PageProps) {

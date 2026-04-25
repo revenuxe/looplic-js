@@ -3,11 +3,13 @@ import { CheckCircle2, ShieldCheck, Sparkles, Users } from "lucide-react";
 
 import { InfoPageLayout } from "@/src/components/next/InfoPageLayout";
 import { companyName, supportEmail, supportPhoneDisplay } from "@/src/lib/company";
+import { buildPageMetadata } from "@/src/lib/metadata";
 
-export const metadata: Metadata = {
-  title: "About Us",
-  description: `Learn about ${companyName}, our doorstep service approach, and how we support customers with device care across bookings, support, and service quality.`,
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: `About ${companyName}`,
+  description: `Learn about ${companyName}, our doorstep screen guard and device service approach, and how we support customers across booking, communication, and service quality.`,
+  pathname: "/about-us",
+});
 
 const pillars = [
   {
