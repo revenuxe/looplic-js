@@ -51,8 +51,8 @@ export function HomepageView({
       <ScreenGuardTypes />
       <HowItWorks />
       <TrustSignals />
-      <ServiceAreasSection currentAreaSlug={currentAreaSlug} />
       <HomepageFooter />
+      <ServiceAreasSection currentAreaSlug={currentAreaSlug} />
     </div>
   );
 }
